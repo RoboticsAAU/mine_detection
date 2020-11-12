@@ -238,8 +238,8 @@ void rotate(double angular_speed, double angle, bool clockwise)
         // Calculate current_distance
         ros::spinOnce();
         loop_rate.sleep();
-        cout << cur_pose.theta;
-    } while (abs(cur_pose.theta - angle) > 0.1);
+        cout << (abs(-cur_pose.theta - angle)) << "\n";
+    } while (abs(-cur_pose.theta - angle) > 0.1);
 
     // set velocity to zero to stop the robot
     vel_msg.angular.z = 0.0;
