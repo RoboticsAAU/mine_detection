@@ -1,0 +1,12 @@
+Symlinking /home/ros/demining_ws/src/mine_detection/devel/./local_setup.zsh
+Symlinking /home/ros/demining_ws/src/mine_detection/devel/./setup.bash
+Symlinking /home/ros/demining_ws/src/mine_detection/devel/./setup.zsh
+Symlinking /home/ros/demining_ws/src/mine_detection/devel/./setup.sh
+Symlinking /home/ros/demining_ws/src/mine_detection/devel/./local_setup.bash
+Symlinking /home/ros/demining_ws/src/mine_detection/devel/./_setup_util.py
+Symlinking /home/ros/demining_ws/src/mine_detection/devel/./cmake.lock
+Symlinking /home/ros/demining_ws/src/mine_detection/devel/./local_setup.sh
+Symlinking /home/ros/demining_ws/src/mine_detection/devel/./env.sh
+Symlinking /home/ros/demining_ws/src/mine_detection/devel/share/catkin_tools_prebuild/cmake/catkin_tools_prebuildConfig.cmake
+Symlinking /home/ros/demining_ws/src/mine_detection/devel/share/catkin_tools_prebuild/cmake/catkin_tools_prebuildConfig-version.cmake
+Symlinking /home/ros/demining_ws/src/mine_detection/devel/lib/pkgconfig/catkin_tools_prebuild.pc

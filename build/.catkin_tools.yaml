@@ -1,0 +1,6 @@
+devel_space: /home/ros/demining_ws/src/mine_detection/devel
+install: false
+install_space: /home/ros/demining_ws/src/mine_detection/install
+profile: default
+source_space: /home/ros/demining_ws/src/mine_detection/src
+workspace: /home/ros/demining_ws/src/mine_detection

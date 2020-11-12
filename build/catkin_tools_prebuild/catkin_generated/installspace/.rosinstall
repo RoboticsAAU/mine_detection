@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/ros/demining_ws/src/mine_detection/install/setup.sh
