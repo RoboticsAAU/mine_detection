@@ -21,7 +21,7 @@ double euclidean_distance(double x1, double y1, double x2, double y2);
 double linear_velocity(turtlesim::Pose goal);
 double angular_velocity(turtlesim::Pose goal);
 void move2goal(turtlesim::Pose goal);
-double setDesiredOrientation(double desired_angle_radians);
+void setDesiredOrientation(double desired_angle_radians);
 double degrees2radians(double angle_in_degrees);
 
 const double distance_tolerance = 0.1;
@@ -252,7 +252,7 @@ void move2goal(turtlesim::Pose goal){
     vel_pub.publish(vel_msg);
 }
 
-double setDesiredOrientation(double desired_angle_radians)
+void setDesiredOrientation(double desired_angle_radians)
 {	
 	double relative_angle_radians = desired_angle_radians - cur_pose.theta;
 	//if we want to turn at a perticular orientation, we subtract the current orientation from it
