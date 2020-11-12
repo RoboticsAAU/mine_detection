@@ -97,9 +97,9 @@ int main(int argc, char *argv[])
 
     // }
 
-    move2goal(goal_pose);
-    setDesiredOrientation(M_PI_2);
-
+    //move2goal(goal_pose);
+    //setDesiredOrientation(M_PI);
+    rotate(2,M_PI,false);
     //cout << "done";
     //goal_pose.theta = 2 * M_PI;
 
@@ -131,7 +131,7 @@ void move(double speed, double distance, bool isForward)
     double t0 = ros::Time::now().toSec();
     double current_distance = 0.0;
 
-    ros::Rate loop_rate(100);
+    ros::Rate loop_rate(5);
     do
     {
         vel_pub.publish(vel_msg);
@@ -148,37 +148,105 @@ void move(double speed, double distance, bool isForward)
 }
 
 //positive angular speed rotation is counteclockwise.
+// void rotate(double angular_speed, double angle, bool clockwise)
+// {
+//     geometry_msgs::Twist vel_msg;
+//     vel_msg.linear.x = 0;
+//     vel_msg.linear.y = 0;
+//     vel_msg.linear.z = 0;
+
+//     vel_msg.angular.x = 0;
+//     vel_msg.angular.y = 0;
+
+//     if (clockwise)
+//     {
+//         vel_msg.angular.z = -abs(angular_speed);
+//     }
+//     else
+//     {
+//         vel_msg.angular.z = abs(angular_speed);
+//     }
+
+//     double current_angle = cur_pose.theta;
+//     double t0 = ros::Time::now().toSec();
+//     ros::Rate loop_rate(100);
+//     do
+//     {
+//         vel_pub.publish(vel_msg);
+//         double t1 = ros::Time::now().toSec();
+//         current_angle = angular_speed * (t1 - t0);
+//         ros::spinOnce();
+//     } while (current_angle <= angle);
+
+//     vel_msg.angular.z = 0;
+//     vel_pub.publish(vel_msg);
+// }
+
+// void rotate(double angle_radians){
+//     geometry_msgs::Twist vel_msg;
+//     vel_msg.linear.x = 0;
+//     vel_msg.linear.y = 0;
+//     vel_msg.linear.z = 0;
+
+//     vel_msg.angular.x = 0;
+//     vel_msg.angular.y = 0;
+    
+//     if(cur_pose.theta-angle_radians){
+//         angle_radians = 2 * M_PI - angle_radians;
+//     }
+
+
+//     while(cur_pose.theta!=angle_radians){
+//         vel_msg.angular.z = 1;
+
+//     }
+
+//     vel_msg.angular.z = 0;
+// }
+
 void rotate(double angular_speed, double angle, bool clockwise)
 {
+    // angle = angular_speed * time
     geometry_msgs::Twist vel_msg;
-    vel_msg.linear.x = 0;
-    vel_msg.linear.y = 0;
-    vel_msg.linear.z = 0;
+// set a random linear velocity in the x-axis
 
-    vel_msg.angular.x = 0;
-    vel_msg.angular.y = 0;
+vel_msg.linear.x = 0;
+vel_msg.linear.y = 0;
+vel_msg.linear.z = 0;
 
-    if (clockwise)
-    {
-        vel_msg.angular.z = -abs(angular_speed);
-    }
-    else
-    {
-        vel_msg.angular.z = abs(angular_speed);
-    }
+// set angular velocity
+vel_msg.angular.x = 0;
+vel_msg.angular.y = 0;
+if(clockwise)
+    vel_msg.angular.z = -abs(angular_speed);
+else
+    vel_msg.angular.z = abs(angular_speed);
 
-    double current_angle = cur_pose.theta;
-    double t0 = ros::Time::now().toSec();
-    ros::Rate loop_rate(10);
-    do
-    {
-        vel_pub.publish(vel_msg);
-        double t1 = ros::Time::now().toSec();
-        current_angle = angular_speed * (t1 - t0);
-        ros::spinOnce();
-    } while (current_angle <= angle);
-    vel_msg.angular.z = 0;
+// t0 is the current time
+double t0 = ros::Time::now().toSec();
+
+double current_angle = 0;
+
+ros::Rate loop_rate(10);
+
+// loop to publish the velocity 
+// estimate, current_distance = velocity * (t1 - t0)
+do
+{
+    // Publish the velocity
     vel_pub.publish(vel_msg);
+    // t1 is the current time
+    double t1 = ros::Time::now().toSec();
+    // Calculate current_distance
+    current_angle = angular_speed * (t1 - t0) ;
+    ros::spinOnce();
+    loop_rate.sleep();
+} while (current_angle < angle);
+
+// set velocity to zero to stop the robot
+vel_msg.angular.z = 0.0;
+vel_pub.publish(vel_msg);
+
 }
 
 void poseCallback(const turtlesim::Pose::ConstPtr &pose_message)
