@@ -13,21 +13,16 @@ ros::Subscriber sub_pose;
 //method to move the robot straight.
 
 void move(double speed, double distance, bool isForward);
-double getTheta();
+double getTheta(double angle);
 void rotate(double angular_speed, double angle);
 void poseCallback(const turtlesim::Pose::ConstPtr &pose_message);
 double euclidean_distance(double x1, double y1, double x2, double y2);
 double linear_velocity(turtlesim::Pose goal);
 double angular_velocity(turtlesim::Pose goal);
+double getAngle(turtlesim::Pose goal);
 void move2goal(turtlesim::Pose goal);
-void setDesiredOrientation(double desired_angle_radians);
-double degrees2radians(double angle_in_degrees);
 
-const double distance_tolerance = 0.1;
-
-const double pi = M_PI;
-
-//double cur_x, cur_y, cur_theta;
+const double distance_tolerance = 0.01;
 
 turtlesim::Pose cur_pose;
 
@@ -41,43 +36,49 @@ int main(int argc, char *argv[])
     bool isForward, clockwise;
 
     vel_pub = n.advertise<geometry_msgs::Twist>("/turtle1/cmd_vel", 10);
-    sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
+    sub_pose = n.subscribe("/turtle1/pose", 1000, &poseCallback);
 
     ros::Rate loop_rate(10);
 
     turtlesim::Pose goal_pose;
 
-    goal_pose.x = 1;
-    goal_pose.y = 3;
-    //rotate(1,M_PI,0);
-    //degrees2radians(90);
-    // for (int i = 1; i < 11; i++)
-    // {
-    //     if(i%2 == 1){
-    //         for (int j = 1; j < 11; j++)
-    //         {
-    //             goal_pose.x = i;
-    //             goal_pose.y = j;
-    //             move2goal(goal_pose);
-    //         }
-    //     }
-    //     else {
-    //         for (int j = 10; j > 0; j--)
-    //         {
-    //             goal_pose.x = i;
-    //             goal_pose.y = j;
-    //             move2goal(goal_pose);
-    //         }
+    //goal_pose.x = 1;
+    //goal_pose.y = 3;
+    //move2goal(goal_pose);
 
-    //     }
+    for (int i = 1; i < 11; i++)
+    {
 
-    // }
+        if (i % 2 == 1)
+        {
+            for (int j = 1; j < 11; j++)
+            {
+                cout << "Going to: " << i << " , " << j << endl;
+                goal_pose.x = i;
+                goal_pose.y = j;
+                rotate(2.0, getTheta(getAngle(goal_pose)));
+                move2goal(goal_pose);
+            }
+        }
+        else
+        {
+            for (int j = 10; j > 0; j--)
+            {
+                cout << "Going to: " << i << " , " << j << endl;
+                goal_pose.x = i;
+                goal_pose.y = j;
+                cout << getTheta(getAngle(goal_pose)) << endl;
+                rotate(2.0, getTheta(getAngle(goal_pose)));
+                move2goal(goal_pose);
+            }
+        }
+    }
 
     //move2goal(goal_pose);
     //setDesiredOrientation(M_PI);
-    rotate(2.0, M_PI_2);
-    cout << "Done!" << endl;
-    rotate(2.0, M_PI);
+    //move2goal(goal_pose);
+    //rotate(2.0, M_PI_2);
+
     //cout << "done";
     //goal_pose.theta = 2 * M_PI;
 
@@ -130,10 +131,10 @@ void move(double speed, double distance, bool isForward)
     //distance = speed * time
 }
 
-double getTheta()
+double getTheta(double angle)
 {
-    double theta = cur_pose.theta < 0 ? cur_pose.theta + 2 * M_PI : cur_pose.theta;
-    cout << "Got theta: " << theta << endl;
+    double theta = angle < 0 ? angle + 2 * M_PI : angle;
+    //cout << "Got theta: " << theta << endl;
     return theta;
 }
 
@@ -148,9 +149,9 @@ void rotate(double angular_velocity, double desired_angle)
     vel_msg.angular.x = 0;
     vel_msg.angular.y = 0;
     ros::spinOnce();
-
     // Rotates either clockwise (if=true) or counterclockwise (if=false) depending on which is shortest.
-    if (desired_angle - getTheta() > M_PI || desired_angle < getTheta())
+    if (desired_angle - getTheta(cur_pose.theta) > M_PI ||
+        (desired_angle < getTheta(cur_pose.theta) && (getTheta(cur_pose.theta) - desired_angle) < M_PI))
     {
         vel_msg.angular.z = -fabs(angular_velocity);
     }
@@ -159,7 +160,7 @@ void rotate(double angular_velocity, double desired_angle)
         vel_msg.angular.z = fabs(angular_velocity);
     }
 
-    ros::Rate loop_rate(100);
+    ros::Rate loop_rate(1000);
 
     // Rotates until turtle has rotated to desired angle (within 0.05 radians).
     do
@@ -168,7 +169,7 @@ void rotate(double angular_velocity, double desired_angle)
         vel_pub.publish(vel_msg);
         ros::spinOnce();
         loop_rate.sleep();
-    } while (fabs(desired_angle - getTheta()) > 0.05);
+    } while (fabs(desired_angle - getTheta(cur_pose.theta)) > 0.02 && ros::ok());
     vel_msg.angular.z = 0;
     vel_pub.publish(vel_msg);
 }
@@ -208,16 +209,21 @@ double angular_velocity(turtlesim::Pose goal)
 {
     double ka = 4;
 
-    return ka * (atan2(goal.y - cur_pose.y, goal.x - cur_pose.x) - cur_pose.theta);
+    return ka * (getAngle(goal) - cur_pose.theta);
+}
+
+double getAngle(turtlesim::Pose goal)
+{
+    return atan2(goal.y - cur_pose.y, goal.x - cur_pose.x);
 }
 
 void move2goal(turtlesim::Pose goal)
 {
 
     geometry_msgs::Twist vel_msg;
-    ros::Rate loop_rate = (10);
+    ros::Rate loop_rate = (1000);
 
-    while (euclidean_distance(cur_pose.x, cur_pose.y, goal.x, goal.y) > distance_tolerance)
+    while (euclidean_distance(cur_pose.x, cur_pose.y, goal.x, goal.y) > distance_tolerance && ros::ok())
     {
         // std::cout << "x: " << cur_pose.x << std::endl << "y: " << cur_pose.y << std::endl << "theta: " << cur_pose.theta << std::endl;
 
@@ -241,18 +247,4 @@ void move2goal(turtlesim::Pose goal)
     vel_msg.linear.x = 0;
     vel_msg.angular.z = 0;
     vel_pub.publish(vel_msg);
-}
-
-void setDesiredOrientation(double desired_angle_radians)
-{
-    double relative_angle_radians = desired_angle_radians - cur_pose.theta;
-    //if we want to turn at a perticular orientation, we subtract the current orientation from it
-    bool clockwise = ((relative_angle_radians < 0) ? true : false);
-    cout << desired_angle_radians << "," << cur_pose.theta << "," << relative_angle_radians << "," << clockwise << endl;
-    rotate(2, abs(relative_angle_radians));
-}
-
-double degrees2radians(double angle_in_degrees)
-{
-    return angle_in_degrees * M_PI / 180.0;
 }
