@@ -45,10 +45,8 @@ int main(int argc, char *argv[])
 
     ros::Rate loop_rate(10);
 
-    
-
     turtlesim::Pose goal_pose;
-    
+
     goal_pose.x = 1;
     goal_pose.y = 3;
     //rotate(1,M_PI,0);
@@ -82,12 +80,12 @@ int main(int argc, char *argv[])
     rotate(2.0, M_PI);
     //cout << "done";
     //goal_pose.theta = 2 * M_PI;
-    
+
     // while(ros::ok()){
     //     cout << cur_pose.theta << " , " << getTheta() << endl;
     //     ros::spinOnce();
     // }
-    
+
     return 0;
 }
 
@@ -132,43 +130,48 @@ void move(double speed, double distance, bool isForward)
     //distance = speed * time
 }
 
-double getTheta(){
+double getTheta()
+{
     double theta = cur_pose.theta < 0 ? cur_pose.theta + 2 * M_PI : cur_pose.theta;
     cout << "Got theta: " << theta << endl;
     return theta;
 }
 
-
-void rotate(double angular_velocity, double desired_angle){
+void rotate(double angular_velocity, double desired_angle)
+{
     geometry_msgs::Twist vel_msg;
     vel_msg.linear.x = 0;
     vel_msg.linear.y = 0;
     vel_msg.linear.z = 0;
 
-    // set angular velocity
+    // Set angular velocity to 0.
     vel_msg.angular.x = 0;
     vel_msg.angular.y = 0;
     ros::spinOnce();
-    if(desired_angle - getTheta() > M_PI || desired_angle < getTheta()){
+
+    // Rotates either clockwise (if=true) or counterclockwise (if=false) depending on which is shortest.
+    if (desired_angle - getTheta() > M_PI || desired_angle < getTheta())
+    {
         vel_msg.angular.z = -fabs(angular_velocity);
     }
-    else{
+    else
+    {
         vel_msg.angular.z = fabs(angular_velocity);
     }
 
     ros::Rate loop_rate(100);
 
-    do{
-        
+    // Rotates until turtle has rotated to desired angle (within 0.05 radians).
+    do
+    {
+
         vel_pub.publish(vel_msg);
         ros::spinOnce();
         loop_rate.sleep();
-    }while(fabs(desired_angle - getTheta()) > 0.05);
+    } while (fabs(desired_angle - getTheta()) > 0.05);
     vel_msg.angular.z = 0;
     vel_pub.publish(vel_msg);
-
 }
-
 
 void poseCallback(const turtlesim::Pose::ConstPtr &pose_message)
 {
