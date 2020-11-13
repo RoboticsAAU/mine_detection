@@ -13,8 +13,8 @@ ros::Subscriber sub_pose;
 //method to move the robot straight.
 
 void move(double speed, double distance, bool isForward);
-double getTheta(double current_theta);
-void rotate(double angular_speed, double angle, bool clockwise);
+double getTheta();
+void rotate(double angular_speed, double angle);
 void poseCallback(const turtlesim::Pose::ConstPtr &pose_message);
 double euclidean_distance(double x1, double y1, double x2, double y2);
 double linear_velocity(turtlesim::Pose goal);
@@ -52,7 +52,6 @@ int main(int argc, char *argv[])
     goal_pose.x = 1;
     goal_pose.y = 3;
     //rotate(1,M_PI,0);
-    //setDesiredOrientation(M_PI + M_PI_2);
     //degrees2radians(90);
     // for (int i = 1; i < 11; i++)
     // {
@@ -78,13 +77,16 @@ int main(int argc, char *argv[])
 
     //move2goal(goal_pose);
     //setDesiredOrientation(M_PI);
-    //rotate(2.0, 3 * M_PI_2, false);
+    rotate(2.0, M_PI_2);
+    cout << "Done!" << endl;
+    rotate(2.0, M_PI);
     //cout << "done";
     //goal_pose.theta = 2 * M_PI;
-    while(ros::ok()){
-        cout << cur_pose.theta << " , " << getTheta(cur_pose.theta) << endl;
-        ros::spinOnce();
-    }
+    
+    // while(ros::ok()){
+    //     cout << cur_pose.theta << " , " << getTheta() << endl;
+    //     ros::spinOnce();
+    // }
     
     return 0;
 }
@@ -130,61 +132,73 @@ void move(double speed, double distance, bool isForward)
     //distance = speed * time
 }
 
-double getTheta(double current_theta){
-    // if(current_theta < 0){
-    //     return current_theta + 2 * M_PI;
-    // }
-    // else
-    // {
-    //     return current_theta;
-    // }
-    
-    return current_theta < 0 ? current_theta + 2 * M_PI : current_theta;
+double getTheta(){
+    double theta = cur_pose.theta < 0 ? cur_pose.theta + 2 * M_PI : cur_pose.theta;
+    cout << "Got theta: " << theta << endl;
+    return theta;
 }
-
 //positive angular speed rotation is counteclockwise.
-void rotate(double angular_speed, double angle, bool clockwise)
-{
-    // angle = angular_speed * time
+// void rotate(double angular_speed, double angle, bool clockwise)
+// {
+//     // angle = angular_speed * time
+    
+// // set a random linear velocity in the x-axis
+// geometry_msgs::Twist vel_msg;
+
+// // t0 is the current time
+// double t0 = ros::Time::now().toSec();
+
+// double current_angle = 0;
+
+// ros::Rate loop_rate(10);
+
+// // loop to publish the velocity 
+// // estimate, current_distance = velocity * (t1 - t0)
+// do
+// {
+//     // Publish the velocity
+//     vel_pub.publish(vel_msg);
+//     // t1 is the current time
+//     double t1 = ros::Time::now().toSec();
+//     // Calculate current_distance
+//     current_angle = angular_speed * (t1 - t0) ;
+//     ros::spinOnce();
+//     loop_rate.sleep();
+// } while (current_angle < angle);
+
+// // set velocity to zero to stop the robot
+// vel_msg.angular.z = 0.0;
+// vel_pub.publish(vel_msg);
+
+//}
+
+void rotate(double angular_velocity, double desired_angle){
     geometry_msgs::Twist vel_msg;
-// set a random linear velocity in the x-axis
+    vel_msg.linear.x = 0;
+    vel_msg.linear.y = 0;
+    vel_msg.linear.z = 0;
 
-vel_msg.linear.x = 0;
-vel_msg.linear.y = 0;
-vel_msg.linear.z = 0;
-
-// set angular velocity
-vel_msg.angular.x = 0;
-vel_msg.angular.y = 0;
-if(clockwise)
-    vel_msg.angular.z = -fabs(angular_speed);
-else
-    vel_msg.angular.z = fabs(angular_speed);
-
-// t0 is the current time
-double t0 = ros::Time::now().toSec();
-
-double current_angle = 0;
-
-ros::Rate loop_rate(10);
-
-// loop to publish the velocity 
-// estimate, current_distance = velocity * (t1 - t0)
-do
-{
-    // Publish the velocity
-    vel_pub.publish(vel_msg);
-    // t1 is the current time
-    double t1 = ros::Time::now().toSec();
-    // Calculate current_distance
-    current_angle = angular_speed * (t1 - t0) ;
+    // set angular velocity
+    vel_msg.angular.x = 0;
+    vel_msg.angular.y = 0;
     ros::spinOnce();
-    loop_rate.sleep();
-} while (current_angle < angle);
+    if(desired_angle - getTheta() > M_PI || desired_angle < getTheta()){
+        vel_msg.angular.z = -fabs(angular_velocity);
+    }
+    else{
+        vel_msg.angular.z = fabs(angular_velocity);
+    }
 
-// set velocity to zero to stop the robot
-vel_msg.angular.z = 0.0;
-vel_pub.publish(vel_msg);
+    ros::Rate loop_rate(100);
+
+    do{
+        
+        vel_pub.publish(vel_msg);
+        ros::spinOnce();
+        loop_rate.sleep();
+    }while(fabs(desired_angle - getTheta()) > 0.05);
+    vel_msg.angular.z = 0;
+    vel_pub.publish(vel_msg);
 
 }
 
@@ -265,7 +279,7 @@ void setDesiredOrientation(double desired_angle_radians)
     //if we want to turn at a perticular orientation, we subtract the current orientation from it
     bool clockwise = ((relative_angle_radians < 0) ? true : false);
     cout << desired_angle_radians << "," << cur_pose.theta << "," << relative_angle_radians << "," << clockwise << endl;
-    rotate(2, abs(relative_angle_radians), clockwise);
+    rotate(2, abs(relative_angle_radians));
 }
 
 double degrees2radians(double angle_in_degrees)
