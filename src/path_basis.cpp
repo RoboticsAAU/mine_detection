@@ -137,40 +137,7 @@ double getTheta(){
     cout << "Got theta: " << theta << endl;
     return theta;
 }
-//positive angular speed rotation is counteclockwise.
-// void rotate(double angular_speed, double angle, bool clockwise)
-// {
-//     // angle = angular_speed * time
-    
-// // set a random linear velocity in the x-axis
-// geometry_msgs::Twist vel_msg;
 
-// // t0 is the current time
-// double t0 = ros::Time::now().toSec();
-
-// double current_angle = 0;
-
-// ros::Rate loop_rate(10);
-
-// // loop to publish the velocity 
-// // estimate, current_distance = velocity * (t1 - t0)
-// do
-// {
-//     // Publish the velocity
-//     vel_pub.publish(vel_msg);
-//     // t1 is the current time
-//     double t1 = ros::Time::now().toSec();
-//     // Calculate current_distance
-//     current_angle = angular_speed * (t1 - t0) ;
-//     ros::spinOnce();
-//     loop_rate.sleep();
-// } while (current_angle < angle);
-
-// // set velocity to zero to stop the robot
-// vel_msg.angular.z = 0.0;
-// vel_pub.publish(vel_msg);
-
-//}
 
 void rotate(double angular_velocity, double desired_angle){
     geometry_msgs::Twist vel_msg;
