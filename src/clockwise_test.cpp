@@ -46,20 +46,20 @@ bool VectorInUpperQuadrants(Vector2D vector)
     return vector.y >= 0;
 }
 
-Vector2D vectorByAngle(double angle)
-{
-    Vector2D vector;
-    vector.x = cos(angle);
-    vector.y = sin(angle);
-    return vector;
-}
-
 Vector2D rotateVectorByAngle(double angle, Vector2D vector)
 {
     Vector2D rotatedVector;
     rotatedVector.x = vector.x * cos(2 * M_PI - angle) + vector.y * (-sin(2.0 * M_PI - angle));
     rotatedVector.y = vector.x * sin(2 * M_PI - angle) + vector.y * cos(2.0 * M_PI - angle);
     return rotatedVector;
+}
+
+Vector2D vectorByAngle(double angle)
+{
+    Vector2D vector;
+    vector.x = cos(angle);
+    vector.y = sin(angle);
+    return vector;
 }
 
 /*bool IsAsExpected(bool b1, bool b2)
