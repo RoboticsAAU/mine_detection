@@ -10,6 +10,18 @@ using namespace std;
 ros::Publisher vel_pub;
 ros::Subscriber sub_pose;
 
+class Vector2D
+{
+public:
+    double x;
+    double y;
+};
+
+bool IsClockwise(double angleActual, double angleDesired);
+bool VectorInUpperQuadrants(Vector2D vector);
+Vector2D vectorByAngle(double angle);
+Vector2D rotateVectorByAngle(double angle, Vector2D vector);
+
 //method to move the robot straight.
 
 void move(double speed, double distance, bool isForward);
@@ -173,6 +185,40 @@ void rotate(double angular_velocity, double desired_angle)
     vel_msg.angular.z = 0;
     vel_pub.publish(vel_msg);
 }
+
+#pragma region WIP
+bool IsClockwise(double angleActual, double angleDesired)
+{
+    Vector2D vectorActual = vectorByAngle(angleActual);
+    Vector2D vectorDesired = vectorByAngle(angleDesired);
+
+    Vector2D rotatedVectorActual = rotateVectorByAngle(angleActual, vectorActual);
+    Vector2D rotatedVectorDesired = rotateVectorByAngle(angleActual, vectorDesired);
+
+    return !VectorInUpperQuadrants(rotatedVectorDesired);
+}
+
+bool VectorInUpperQuadrants(Vector2D vector)
+{
+    return vector.y >= 0;
+}
+
+Vector2D vectorByAngle(double angle)
+{
+    Vector2D vector;
+    vector.x = cos(angle);
+    vector.y = sin(angle);
+    return vector;
+}
+
+Vector2D rotateVectorByAngle(double angle, Vector2D vector)
+{
+    Vector2D rotatedVector;
+    rotatedVector.x = vector.x * cos(2 * M_PI - angle) + vector.y * (-sin(2 * M_PI - angle));
+    rotatedVector.y = vector.x * sin(2 * M_PI - angle) + vector.y * cos(2 * M_PI - angle);
+    return rotatedVector;
+}
+#pragma endregion
 
 void poseCallback(const turtlesim::Pose::ConstPtr &pose_message)
 {
