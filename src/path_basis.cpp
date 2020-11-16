@@ -19,8 +19,8 @@ public:
 
 bool IsClockwise(double angleActual, double angleDesired);
 bool VectorInUpperQuadrants(Vector2D vector);
-Vector2D vectorByAngle(double angle);
 Vector2D rotateVectorByAngle(double angle, Vector2D vector);
+Vector2D vectorByAngle(double angle);
 
 //method to move the robot straight.
 
@@ -203,6 +203,14 @@ bool VectorInUpperQuadrants(Vector2D vector)
     return vector.y >= 0;
 }
 
+Vector2D rotateVectorByAngle(double angle, Vector2D vector)
+{
+    Vector2D rotatedVector;
+    rotatedVector.x = vector.x * cos(2 * M_PI - angle) + vector.y * (-sin(2 * M_PI - angle));
+    rotatedVector.y = vector.x * sin(2 * M_PI - angle) + vector.y * cos(2 * M_PI - angle);
+    return rotatedVector;
+}
+
 Vector2D vectorByAngle(double angle)
 {
     Vector2D vector;
@@ -211,13 +219,6 @@ Vector2D vectorByAngle(double angle)
     return vector;
 }
 
-Vector2D rotateVectorByAngle(double angle, Vector2D vector)
-{
-    Vector2D rotatedVector;
-    rotatedVector.x = vector.x * cos(2 * M_PI - angle) + vector.y * (-sin(2 * M_PI - angle));
-    rotatedVector.y = vector.x * sin(2 * M_PI - angle) + vector.y * cos(2 * M_PI - angle);
-    return rotatedVector;
-}
 #pragma endregion
 
 void poseCallback(const turtlesim::Pose::ConstPtr &pose_message)
