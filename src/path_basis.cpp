@@ -5,11 +5,16 @@
 #include <iostream>
 #include <turtlesim/Pose.h>
 #include <nav_msgs/Odometry.h>
+#include <std_msgs/Empty.h>
 
 using namespace std;
 
+#define Log(name,x) std::cout << name << ": " <<  x << std::endl;
+
+ros::Publisher reset_pub;
 ros::Publisher vel_pub;
 ros::Subscriber sub_pose;
+
 
 struct Vector2D
 {
@@ -72,7 +77,7 @@ EulerAngles ToEulerAngles(Quaternion q){
     double siny_cosp = 2 * (q.w * q.z + q.x * q.y);
     double cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
     //calculate yaw, and make the yaw angle be 0 < yaw < 2pi.
-    angles.yaw = std::atan2(siny_cosp, cosy_cosp) + M_PI;
+    angles.yaw = std::atan2(siny_cosp, cosy_cosp);
 
     return angles;
 }
@@ -127,8 +132,15 @@ int main(int argc, char *argv[])
     double distance, angle;
     bool isForward, clockwise;
 
-    vel_pub = n.advertise<geometry_msgs::Twist>("/turtle1/cmd_vel", 10);
+    reset_pub = n.advertise<std_msgs::Empty>("/mobile_base/commands/reset_odometry",10);
+    vel_pub = n.advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/navi", 10);
     sub_pose = n.subscribe("/odom", 1000, &poseCallback);
+
+    while(reset_pub.getNumSubscribers() == 0){
+        ros::spinOnce();
+    }
+    std_msgs::Empty e;
+    reset_pub.publish(e);
 
     ros::Rate loop_rate(10);
 
@@ -137,16 +149,14 @@ int main(int argc, char *argv[])
     // The while loop fixes a bug where the turtles coordinates are wrong when it spawns, by waiting for the turles position to be updated.
     // The turtle thinks it spawns at (0 ; 0), but it actually spawns around (5,5 ; 5,5))
 
-    while(ros::ok()){
+    // while(ros::ok()){
+    //     ros::spinOnce();
+    // }
+
+    while(cur_pose.x == 0){
         ros::spinOnce();
     }
 
-    while (cur_pose.x == 0)
-    {
-        //std::cout << cur_pose.x << ":" << cur_pose.y << endl;
-        ros::spinOnce();
-    };
-    std::cout << cur_pose.x << ":" << cur_pose.y << endl;
 
     for (int i = 1; i < 11; i++)
     {
@@ -158,7 +168,7 @@ int main(int argc, char *argv[])
                 std::cout << "Going to: " << goal_pose.x << " , " << goal_pose.y << endl;
                 goal_pose.x = i;
                 goal_pose.y = j;
-                rotate(2.0, getTheta(getAngle(goal_pose)));
+                rotate(0.5, getTheta(getAngle(goal_pose)));
                 move2goal(goal_pose);
             }
         }
@@ -169,7 +179,7 @@ int main(int argc, char *argv[])
                 std::cout << "Going to: " << i << " , " << j << endl;
                 goal_pose.x = i;
                 goal_pose.y = j;
-                rotate(2.0, getTheta(getAngle(goal_pose)));
+                rotate(0.5, getTheta(getAngle(goal_pose)));
                 move2goal(goal_pose);
             }
         }
@@ -254,7 +264,7 @@ void rotate(double angular_velocity, double desired_angle)
         vel_pub.publish(vel_msg);
         ros::spinOnce();
         loop_rate.sleep();
-    } while (fabs(desired_angle - getTheta(cur_pose.theta)) > 0.02 && ros::ok());
+    } while (fabs(desired_angle - getTheta(cur_pose.theta)) > 0.1 && ros::ok());
 
     // Stops the turtle from rotating.
     vel_msg.angular.z = 0;
@@ -308,17 +318,17 @@ double euclidean_distance(double x1, double y1, double x2, double y2)
 
 double linear_velocity(turtlesim::Pose goal)
 {
-    double kv = 1.5;
+    double kv = 0.5;
 
     double distance = euclidean_distance(cur_pose.x, cur_pose.y, goal.x, goal.y);
-
+    //Log("Distance", distance);
     // The closer the turtle is to the goal position, the slower it moves
     return kv * distance;
 }
 
 double angular_velocity(turtlesim::Pose goal)
 {
-    double ka = 4;
+    double ka = 1;
 
     return ka * (getTheta(getAngle(goal)) - getTheta(cur_pose.theta));
 }
