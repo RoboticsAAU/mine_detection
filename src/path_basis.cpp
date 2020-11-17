@@ -58,6 +58,13 @@ int main(int argc, char *argv[])
     //goal_pose.y = 3;
     //move2goal(goal_pose);
 
+
+    while(cur_pose.x == 0){
+        std::cout << cur_pose.x << ":" << cur_pose.y << endl;
+        ros::spinOnce();
+    };
+    std::cout << cur_pose.x << ":" << cur_pose.y << endl;
+
     for (int i = 1; i < 11; i++)
     {
 
@@ -65,10 +72,10 @@ int main(int argc, char *argv[])
         {
             for (int j = 1; j < 11; j++)
             {
-                cout << "Going to: " << i << " , " << j << endl;
                 goal_pose.x = i;
                 goal_pose.y = j;
                 rotate(2.0, getTheta(getAngle(goal_pose)));
+                std::cout << "Going to: " << goal_pose.x << " , " << goal_pose.y << endl;
                 move2goal(goal_pose);
             }
         }
@@ -76,10 +83,10 @@ int main(int argc, char *argv[])
         {
             for (int j = 10; j > 0; j--)
             {
-                cout << "Going to: " << i << " , " << j << endl;
+                std::cout << "Going to: " << i << " , " << j << endl;
                 goal_pose.x = i;
                 goal_pose.y = j;
-                cout << getTheta(getAngle(goal_pose)) << endl;
+                std::cout << getTheta(getAngle(goal_pose)) << endl;
                 rotate(2.0, getTheta(getAngle(goal_pose)));
                 move2goal(goal_pose);
             }
@@ -149,9 +156,18 @@ double getTheta(double angle)
 void rotate(double angular_velocity, double desired_angle)
 {
     geometry_msgs::Twist vel_msg;
+    vel_msg.linear.x = 0;
+    vel_msg.linear.y = 0;
+    vel_msg.linear.z = 0;
 
-    setAllVelocityZero();
-    //ros::spinOnce();
+    vel_msg.angular.x = 0;
+    vel_msg.angular.y = 0;
+
+    //setAllVelocityZero();
+
+    ros::spinOnce();
+    
+
 
     // Rotates either clockwise (if=true) or counterclockwise (if=false) depending on which is shortest.
     if (IsClockwise(getTheta(cur_pose.theta), desired_angle))
@@ -162,12 +178,12 @@ void rotate(double angular_velocity, double desired_angle)
     {
         vel_msg.angular.z = fabs(angular_velocity);
     }
-
+    
     ros::Rate loop_rate(1000);
-
     // Rotates until turtle has rotated to desired angle (within 0.05 radians).
     do
     {
+        //cout << cur_pose.x << ":" << cur_pose.y << endl;
         vel_pub.publish(vel_msg);
         ros::spinOnce();
         loop_rate.sleep();
@@ -233,7 +249,7 @@ double euclidean_distance(double x1, double y1, double x2, double y2)
 
 double linear_velocity(turtlesim::Pose goal)
 {
-    double kv = 1;
+    double kv = 1.5;
 
     double distance = euclidean_distance(cur_pose.x, cur_pose.y, goal.x, goal.y);
 
@@ -246,7 +262,7 @@ double angular_velocity(turtlesim::Pose goal)
 {
     double ka = 4;
 
-    return ka * (getAngle(goal) - cur_pose.theta);
+    return ka * (getTheta(getAngle(goal)) - getTheta(cur_pose.theta));
 }
 
 double getAngle(turtlesim::Pose goal)
@@ -258,12 +274,12 @@ void move2goal(turtlesim::Pose goal)
 {
 
     geometry_msgs::Twist vel_msg;
-    ros::Rate loop_rate = (1000);
+    ros::Rate loop_rate = (100);
 
     while (euclidean_distance(cur_pose.x, cur_pose.y, goal.x, goal.y) > distance_tolerance && ros::ok())
     {
         // std::cout << "x: " << cur_pose.x << std::endl << "y: " << cur_pose.y << std::endl << "theta: " << cur_pose.theta << std::endl;
-
+        
         vel_msg.linear.x = linear_velocity(goal);
         vel_msg.linear.y = 0;
         vel_msg.linear.z = 0;
@@ -275,26 +291,25 @@ void move2goal(turtlesim::Pose goal)
         vel_pub.publish(vel_msg);
 
         //cout << "still looping" << endl;
-        if (euclidean_distance(cur_pose.x, cur_pose.y, goal.x, goal.y) > distance_tolerance)
-        {
-            loop_rate.sleep();
-            ros::spinOnce();
-        }
+        loop_rate.sleep();
+        ros::spinOnce();
     }
-    setAllVelocityZero();
-    // vel_msg.linear.x = 0;
-    // vel_msg.angular.z = 0;
+    //setAllVelocityZero();
+    vel_msg.linear.x = 0;
+    vel_msg.angular.z = 0;
     vel_pub.publish(vel_msg);
 }
 
 void setAllVelocityZero()
 {
     geometry_msgs::Twist vel_msg;
+    vel_msg.linear.x = 0;
     vel_msg.linear.y = 0;
     vel_msg.linear.z = 0;
 
     vel_msg.angular.x = 0;
     vel_msg.angular.y = 0;
     vel_msg.angular.z = 0;
+    vel_pub.publish(vel_msg);
     ros::spinOnce();
 }
