@@ -32,7 +32,6 @@ double linear_velocity(turtlesim::Pose goal);
 double angular_velocity(turtlesim::Pose goal);
 double getAngle(turtlesim::Pose goal);
 void move2goal(turtlesim::Pose goal);
-void setAllVelocityZero();
 
 const double distance_tolerance = 0.01;
 
@@ -54,12 +53,8 @@ int main(int argc, char *argv[])
 
     turtlesim::Pose goal_pose;
 
-    //goal_pose.x = 1;
-    //goal_pose.y = 3;
-    //move2goal(goal_pose);
-
-
-    while(cur_pose.x == 0){
+    while (cur_pose.x == 0)
+    {
         std::cout << cur_pose.x << ":" << cur_pose.y << endl;
         ros::spinOnce();
     };
@@ -163,11 +158,7 @@ void rotate(double angular_velocity, double desired_angle)
     vel_msg.angular.x = 0;
     vel_msg.angular.y = 0;
 
-    //setAllVelocityZero();
-
     ros::spinOnce();
-    
-
 
     // Rotates either clockwise (if=true) or counterclockwise (if=false) depending on which is shortest.
     if (IsClockwise(getTheta(cur_pose.theta), desired_angle))
@@ -178,7 +169,7 @@ void rotate(double angular_velocity, double desired_angle)
     {
         vel_msg.angular.z = fabs(angular_velocity);
     }
-    
+
     ros::Rate loop_rate(1000);
     // Rotates until turtle has rotated to desired angle (within 0.05 radians).
     do
@@ -279,7 +270,7 @@ void move2goal(turtlesim::Pose goal)
     while (euclidean_distance(cur_pose.x, cur_pose.y, goal.x, goal.y) > distance_tolerance && ros::ok())
     {
         // std::cout << "x: " << cur_pose.x << std::endl << "y: " << cur_pose.y << std::endl << "theta: " << cur_pose.theta << std::endl;
-        
+
         vel_msg.linear.x = linear_velocity(goal);
         vel_msg.linear.y = 0;
         vel_msg.linear.z = 0;
