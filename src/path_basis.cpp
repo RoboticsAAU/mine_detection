@@ -10,6 +10,17 @@ using namespace std;
 ros::Publisher vel_pub;
 ros::Subscriber sub_pose;
 
+struct Vector2D
+{
+    double x;
+    double y;
+};
+
+bool IsClockwise(double angleActual, double angleDesired);
+bool VectorInUpperQuadrants(Vector2D vector);
+Vector2D rotateVectorByAngle(double angle, Vector2D vector);
+Vector2D vectorByAngle(double angle);
+
 //method to move the robot straight.
 
 void move(double speed, double distance, bool isForward);
@@ -21,9 +32,9 @@ double linear_velocity(turtlesim::Pose goal);
 double angular_velocity(turtlesim::Pose goal);
 double getAngle(turtlesim::Pose goal);
 void move2goal(turtlesim::Pose goal);
+void setAllVelocityZero();
 
 const double distance_tolerance = 0.01;
-
 
 turtlesim::Pose cur_pose;
 
@@ -41,56 +52,60 @@ int main(int argc, char *argv[])
 
     ros::Rate loop_rate(10);
 
-    
-
     turtlesim::Pose goal_pose;
-    
+
     //goal_pose.x = 1;
     //goal_pose.y = 3;
     //move2goal(goal_pose);
-    
+
+
+    while(cur_pose.x == 0){
+        std::cout << cur_pose.x << ":" << cur_pose.y << endl;
+        ros::spinOnce();
+    };
+    std::cout << cur_pose.x << ":" << cur_pose.y << endl;
+
     for (int i = 1; i < 11; i++)
     {
-        
-        if(i%2 == 1){
+
+        if (i % 2 == 1)
+        {
             for (int j = 1; j < 11; j++)
             {
-                cout << "Going to: " << i << " , " << j << endl;
                 goal_pose.x = i;
                 goal_pose.y = j;
-                rotate(2.0,getTheta(getAngle(goal_pose)));
+                rotate(2.0, getTheta(getAngle(goal_pose)));
+                std::cout << "Going to: " << goal_pose.x << " , " << goal_pose.y << endl;
                 move2goal(goal_pose);
             }
         }
-        else {
+        else
+        {
             for (int j = 10; j > 0; j--)
             {
-                cout << "Going to: " << i << " , " << j << endl;
+                std::cout << "Going to: " << i << " , " << j << endl;
                 goal_pose.x = i;
                 goal_pose.y = j;
-                cout << getTheta(getAngle(goal_pose)) << endl;
-                rotate(2.0,getTheta(getAngle(goal_pose)));
+                std::cout << getTheta(getAngle(goal_pose)) << endl;
+                rotate(2.0, getTheta(getAngle(goal_pose)));
                 move2goal(goal_pose);
-
             }
-
         }
     }
-    
 
     //move2goal(goal_pose);
     //setDesiredOrientation(M_PI);
     //move2goal(goal_pose);
     //rotate(2.0, M_PI_2);
-    
+
     //cout << "done";
     //goal_pose.theta = 2 * M_PI;
-    
+
     // while(ros::ok()){
     //     cout << cur_pose.theta << " , " << getTheta() << endl;
     //     ros::spinOnce();
     // }
-    
+
     return 0;
 }
 
@@ -109,12 +124,8 @@ void move(double speed, double distance, bool isForward)
     {
         vel_msg.linear.x = -abs(speed);
     }
-    vel_msg.linear.y = 0;
-    vel_msg.linear.z = 0;
 
-    vel_msg.angular.x = 0;
-    vel_msg.angular.y = 0;
-    vel_msg.angular.z = 0;
+    setAllVelocityZero();
 
     double t0 = ros::Time::now().toSec();
     double current_distance = 0.0;
@@ -135,44 +146,86 @@ void move(double speed, double distance, bool isForward)
     //distance = speed * time
 }
 
-double getTheta(double angle){
+double getTheta(double angle)
+{
     double theta = angle < 0 ? angle + 2 * M_PI : angle;
     //cout << "Got theta: " << theta << endl;
     return theta;
 }
 
-
-void rotate(double angular_velocity, double desired_angle){
+void rotate(double angular_velocity, double desired_angle)
+{
     geometry_msgs::Twist vel_msg;
     vel_msg.linear.x = 0;
     vel_msg.linear.y = 0;
     vel_msg.linear.z = 0;
 
-    // set angular velocity
     vel_msg.angular.x = 0;
     vel_msg.angular.y = 0;
+
+    //setAllVelocityZero();
+
     ros::spinOnce();
-    if(desired_angle - getTheta(cur_pose.theta) > M_PI ||
-      (desired_angle < getTheta(cur_pose.theta) && (getTheta(cur_pose.theta) - desired_angle) < M_PI)) {
+    
+
+
+    // Rotates either clockwise (if=true) or counterclockwise (if=false) depending on which is shortest.
+    if (IsClockwise(getTheta(cur_pose.theta), desired_angle))
+    {
         vel_msg.angular.z = -fabs(angular_velocity);
     }
-    else{
+    else
+    {
         vel_msg.angular.z = fabs(angular_velocity);
     }
-
+    
     ros::Rate loop_rate(1000);
-
-    do{
-        
+    // Rotates until turtle has rotated to desired angle (within 0.05 radians).
+    do
+    {
+        //cout << cur_pose.x << ":" << cur_pose.y << endl;
         vel_pub.publish(vel_msg);
         ros::spinOnce();
         loop_rate.sleep();
-    }while(fabs(desired_angle - getTheta(cur_pose.theta)) > 0.02 && ros::ok());
+    } while (fabs(desired_angle - getTheta(cur_pose.theta)) > 0.02 && ros::ok());
     vel_msg.angular.z = 0;
     vel_pub.publish(vel_msg);
-
 }
 
+#pragma region WIP
+bool IsClockwise(double angleActual, double angleDesired)
+{
+    Vector2D vectorActual = vectorByAngle(angleActual);
+    Vector2D vectorDesired = vectorByAngle(angleDesired);
+
+    Vector2D rotatedVectorActual = rotateVectorByAngle(angleActual, vectorActual);
+    Vector2D rotatedVectorDesired = rotateVectorByAngle(angleActual, vectorDesired);
+
+    return !VectorInUpperQuadrants(rotatedVectorDesired);
+}
+
+bool VectorInUpperQuadrants(Vector2D vector)
+{
+    return vector.y >= 0;
+}
+
+Vector2D rotateVectorByAngle(double angle, Vector2D vector)
+{
+    Vector2D rotatedVector;
+    rotatedVector.x = vector.x * cos(2 * M_PI - angle) + vector.y * (-sin(2 * M_PI - angle));
+    rotatedVector.y = vector.x * sin(2 * M_PI - angle) + vector.y * cos(2 * M_PI - angle);
+    return rotatedVector;
+}
+
+Vector2D vectorByAngle(double angle)
+{
+    Vector2D vector;
+    vector.x = cos(angle);
+    vector.y = sin(angle);
+    return vector;
+}
+
+#pragma endregion
 
 void poseCallback(const turtlesim::Pose::ConstPtr &pose_message)
 {
@@ -196,24 +249,24 @@ double euclidean_distance(double x1, double y1, double x2, double y2)
 
 double linear_velocity(turtlesim::Pose goal)
 {
-    double kv = 1;
+    double kv = 1.5;
 
     double distance = euclidean_distance(cur_pose.x, cur_pose.y, goal.x, goal.y);
 
     //cout << "Distance: " << distance << endl;
 
     return kv * distance;
-
 }
 
 double angular_velocity(turtlesim::Pose goal)
 {
     double ka = 4;
 
-    return ka * (getAngle(goal) - cur_pose.theta);
+    return ka * (getTheta(getAngle(goal)) - getTheta(cur_pose.theta));
 }
 
-double getAngle(turtlesim::Pose goal){
+double getAngle(turtlesim::Pose goal)
+{
     return atan2(goal.y - cur_pose.y, goal.x - cur_pose.x);
 }
 
@@ -221,12 +274,12 @@ void move2goal(turtlesim::Pose goal)
 {
 
     geometry_msgs::Twist vel_msg;
-    ros::Rate loop_rate = (1000);
+    ros::Rate loop_rate = (100);
 
     while (euclidean_distance(cur_pose.x, cur_pose.y, goal.x, goal.y) > distance_tolerance && ros::ok())
     {
         // std::cout << "x: " << cur_pose.x << std::endl << "y: " << cur_pose.y << std::endl << "theta: " << cur_pose.theta << std::endl;
-
+        
         vel_msg.linear.x = linear_velocity(goal);
         vel_msg.linear.y = 0;
         vel_msg.linear.z = 0;
@@ -238,13 +291,25 @@ void move2goal(turtlesim::Pose goal)
         vel_pub.publish(vel_msg);
 
         //cout << "still looping" << endl;
-        if (euclidean_distance(cur_pose.x, cur_pose.y, goal.x, goal.y) > distance_tolerance)
-        {
-            loop_rate.sleep();
-            ros::spinOnce();
-        }
+        loop_rate.sleep();
+        ros::spinOnce();
     }
+    //setAllVelocityZero();
     vel_msg.linear.x = 0;
     vel_msg.angular.z = 0;
     vel_pub.publish(vel_msg);
+}
+
+void setAllVelocityZero()
+{
+    geometry_msgs::Twist vel_msg;
+    vel_msg.linear.x = 0;
+    vel_msg.linear.y = 0;
+    vel_msg.linear.z = 0;
+
+    vel_msg.angular.x = 0;
+    vel_msg.angular.y = 0;
+    vel_msg.angular.z = 0;
+    vel_pub.publish(vel_msg);
+    ros::spinOnce();
 }
