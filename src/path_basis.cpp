@@ -4,6 +4,7 @@
 #include <math.h>
 #include <iostream>
 #include <turtlesim/Pose.h>
+#include <nav_msgs/Odometry.h>
 
 using namespace std;
 
@@ -26,7 +27,7 @@ Vector2D vectorByAngle(double angle);
 void move(double speed, double distance, bool isForward);
 double getTheta(double angle);
 void rotate(double angular_speed, double angle);
-void poseCallback(const turtlesim::Pose::ConstPtr &pose_message);
+void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message);
 double euclidean_distance(double x1, double y1, double x2, double y2);
 double linear_velocity(turtlesim::Pose goal);
 double angular_velocity(turtlesim::Pose goal);
@@ -36,6 +37,86 @@ void move2goal(turtlesim::Pose goal);
 const double distance_tolerance = 0.01;
 
 turtlesim::Pose cur_pose;
+
+
+
+#pragma region Quaterion To Euler Angles conversion
+struct Quaternion{
+    double x, y, z, w;
+};
+
+struct EulerAngles {
+    double roll, pitch, yaw;
+};
+
+EulerAngles angles;
+
+//convert quarternion into eulerangles.
+EulerAngles ToEulerAngles(Quaternion q){
+    EulerAngles angles;
+
+    //roll (x axis rotation)
+    double sinr_cosp = 2 * (q.w * q.x - q.y * q.z);
+    double cosr_cosp = 1 - 2 * (q.x * q.x + q.y * q.y);
+    angles.roll = atan2(sinr_cosp, cosr_cosp);
+
+    //pitch (y axis rotation)
+    double sinp = 2 * (q.w * q.y - q.z * q.x);
+    if (abs(sinp) >= 1)
+        //copysign returns the magnitude of M_PI/2 with the sign of sinp
+        angles.pitch = copysign(M_PI / 2, sinp); // use 90 degrees if out of range
+    else
+        angles.pitch = asin(sinp);
+
+    // yaw (z-axis rotation)
+    double siny_cosp = 2 * (q.w * q.z + q.x * q.y);
+    double cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
+    //calculate yaw, and make the yaw angle be 0 < yaw < 2pi.
+    angles.yaw = std::atan2(siny_cosp, cosy_cosp) + M_PI;
+
+    return angles;
+}
+#pragma endregion
+
+/*
+void poseCallback(const turtlesim::Pose::ConstPtr &pose_message)
+{
+
+    cur_pose.x = pose_message->x;
+    cur_pose.y = pose_message->y;
+    cur_pose.theta = pose_message->theta;
+    //ROS_INFO_STREAM("position=(" << cur_pose.x << "," << cur_pose.y << ")" << " angle= " << cur_pose.theta );
+
+    //std::cout << "x: " << cur_pose.x << std::endl << "y: " << cur_pose.y << std::endl << "theta: " << cur_pose.theta << std::endl;
+}
+*/
+
+void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message){
+    //ROS_INFO_STREAM("Angular: " << pose_message->twist.twist.angular.z << ", Linear: " << pose_message->twist.twist.linear.x );
+
+    //get the x,y position.
+    cur_pose.x = pose_message->pose.pose.position.x;
+    cur_pose.y = pose_message->pose.pose.position.y;
+
+
+    //Quaterion object q. 
+    Quaternion q;
+
+    //assign values of pose message to quaternion.
+    q.x = pose_message->pose.pose.orientation.x;
+    q.y = pose_message->pose.pose.orientation.y;
+    q.z = pose_message->pose.pose.orientation.z;
+    q.w = pose_message->pose.pose.orientation.w;
+
+    //retrieve Euler angles, from quaternion pose message. 
+    angles = ToEulerAngles(q);
+
+    cur_pose.theta = angles.yaw;
+
+    std::cout << "angle: " << angles.yaw << " x: " << cur_pose.x << " y: " << cur_pose.y << std::endl;
+
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -47,7 +128,7 @@ int main(int argc, char *argv[])
     bool isForward, clockwise;
 
     vel_pub = n.advertise<geometry_msgs::Twist>("/turtle1/cmd_vel", 10);
-    sub_pose = n.subscribe("/turtle1/pose", 1000, &poseCallback);
+    sub_pose = n.subscribe("/odom", 1000, &poseCallback);
 
     ros::Rate loop_rate(10);
 
@@ -55,9 +136,14 @@ int main(int argc, char *argv[])
 
     // The while loop fixes a bug where the turtles coordinates are wrong when it spawns, by waiting for the turles position to be updated.
     // The turtle thinks it spawns at (0 ; 0), but it actually spawns around (5,5 ; 5,5))
+
+    while(ros::ok()){
+        ros::spinOnce();
+    }
+
     while (cur_pose.x == 0)
     {
-        std::cout << cur_pose.x << ":" << cur_pose.y << endl;
+        //std::cout << cur_pose.x << ":" << cur_pose.y << endl;
         ros::spinOnce();
     };
     std::cout << cur_pose.x << ":" << cur_pose.y << endl;
@@ -91,6 +177,8 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+
+
 
 /**
  * makes the robot move forward with a certain linear velocity for a
@@ -212,16 +300,6 @@ Vector2D vectorByAngle(double angle)
 }
 #pragma endregion
 
-void poseCallback(const turtlesim::Pose::ConstPtr &pose_message)
-{
-
-    cur_pose.x = pose_message->x;
-    cur_pose.y = pose_message->y;
-    cur_pose.theta = pose_message->theta;
-    //ROS_INFO_STREAM("position=(" << cur_pose.x << "," << cur_pose.y << ")" << " angle= " << cur_pose.theta );
-
-    //std::cout << "x: " << cur_pose.x << std::endl << "y: " << cur_pose.y << std::endl << "theta: " << cur_pose.theta << std::endl;
-}
 
 double euclidean_distance(double x1, double y1, double x2, double y2)
 {
