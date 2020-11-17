@@ -21,7 +21,7 @@ bool VectorInUpperQuadrants(Vector2D vector);
 Vector2D rotateVectorByAngle(double angle, Vector2D vector);
 Vector2D vectorByAngle(double angle);
 
-//method to move the robot straight.
+// Method to move the robot straight.
 
 void move(double speed, double distance, bool isForward);
 double getTheta(double angle);
@@ -53,6 +53,8 @@ int main(int argc, char *argv[])
 
     turtlesim::Pose goal_pose;
 
+    // The while loop fixes a bug where the turtles coordinates are wrong when it spawns, by waiting for the turles position to be updated.
+    // The turtle thinks it spawns at (0 ; 0), but it actually spawns around (5,5 ; 5,5))
     while (cur_pose.x == 0)
     {
         std::cout << cur_pose.x << ":" << cur_pose.y << endl;
@@ -67,10 +69,10 @@ int main(int argc, char *argv[])
         {
             for (int j = 1; j < 11; j++)
             {
+                std::cout << "Going to: " << goal_pose.x << " , " << goal_pose.y << endl;
                 goal_pose.x = i;
                 goal_pose.y = j;
                 rotate(2.0, getTheta(getAngle(goal_pose)));
-                std::cout << "Going to: " << goal_pose.x << " , " << goal_pose.y << endl;
                 move2goal(goal_pose);
             }
         }
@@ -81,25 +83,11 @@ int main(int argc, char *argv[])
                 std::cout << "Going to: " << i << " , " << j << endl;
                 goal_pose.x = i;
                 goal_pose.y = j;
-                std::cout << getTheta(getAngle(goal_pose)) << endl;
                 rotate(2.0, getTheta(getAngle(goal_pose)));
                 move2goal(goal_pose);
             }
         }
     }
-
-    //move2goal(goal_pose);
-    //setDesiredOrientation(M_PI);
-    //move2goal(goal_pose);
-    //rotate(2.0, M_PI_2);
-
-    //cout << "done";
-    //goal_pose.theta = 2 * M_PI;
-
-    // while(ros::ok()){
-    //     cout << cur_pose.theta << " , " << getTheta() << endl;
-    //     ros::spinOnce();
-    // }
 
     return 0;
 }
@@ -119,8 +107,6 @@ void move(double speed, double distance, bool isForward)
     {
         vel_msg.linear.x = -abs(speed);
     }
-
-    setAllVelocityZero();
 
     double t0 = ros::Time::now().toSec();
     double current_distance = 0.0;
@@ -143,6 +129,7 @@ void move(double speed, double distance, bool isForward)
 
 double getTheta(double angle)
 {
+    //If theta is negative it is converted to the corresponding positive angle (Theta becomes negative when the turtle rotates clockwise).
     double theta = angle < 0 ? angle + 2 * M_PI : angle;
     //cout << "Got theta: " << theta << endl;
     return theta;
@@ -151,6 +138,8 @@ double getTheta(double angle)
 void rotate(double angular_velocity, double desired_angle)
 {
     geometry_msgs::Twist vel_msg;
+
+    // Sets all the velocities equal to zero.
     vel_msg.linear.x = 0;
     vel_msg.linear.y = 0;
     vel_msg.linear.z = 0;
@@ -171,19 +160,21 @@ void rotate(double angular_velocity, double desired_angle)
     }
 
     ros::Rate loop_rate(1000);
-    // Rotates until turtle has rotated to desired angle (within 0.05 radians).
+    // Rotates until turtle has rotated to desired angle (within 0.02 radians).
     do
     {
-        //cout << cur_pose.x << ":" << cur_pose.y << endl;
         vel_pub.publish(vel_msg);
         ros::spinOnce();
         loop_rate.sleep();
     } while (fabs(desired_angle - getTheta(cur_pose.theta)) > 0.02 && ros::ok());
+
+    // Stops the turtle from rotating.
     vel_msg.angular.z = 0;
     vel_pub.publish(vel_msg);
 }
 
 #pragma region WIP
+// The function determines if the shortest rotation between the actual angle and the desired angle is clockwise or counterclockwise.
 bool IsClockwise(double angleActual, double angleDesired)
 {
     Vector2D vectorActual = vectorByAngle(angleActual);
@@ -195,11 +186,14 @@ bool IsClockwise(double angleActual, double angleDesired)
     return !VectorInUpperQuadrants(rotatedVectorDesired);
 }
 
+// The function determines whether the rotated desired vector is in the upper quadrants (above the x-axis) or not.
 bool VectorInUpperQuadrants(Vector2D vector)
 {
+    // If the vectors y-value is greater than zero it means that the vector is in the upper quadrants.
     return vector.y >= 0;
 }
 
+// The function rotates a vector around Origo and the x-axis by a given angle.
 Vector2D rotateVectorByAngle(double angle, Vector2D vector)
 {
     Vector2D rotatedVector;
@@ -208,6 +202,7 @@ Vector2D rotateVectorByAngle(double angle, Vector2D vector)
     return rotatedVector;
 }
 
+// The function takes in an angle and makes it into a unit vector.
 Vector2D vectorByAngle(double angle)
 {
     Vector2D vector;
@@ -215,7 +210,6 @@ Vector2D vectorByAngle(double angle)
     vector.y = sin(angle);
     return vector;
 }
-
 #pragma endregion
 
 void poseCallback(const turtlesim::Pose::ConstPtr &pose_message)
@@ -227,10 +221,6 @@ void poseCallback(const turtlesim::Pose::ConstPtr &pose_message)
     //ROS_INFO_STREAM("position=(" << cur_pose.x << "," << cur_pose.y << ")" << " angle= " << cur_pose.theta );
 
     //std::cout << "x: " << cur_pose.x << std::endl << "y: " << cur_pose.y << std::endl << "theta: " << cur_pose.theta << std::endl;
-
-    // cur_x = pose_message.x;
-    // cur_y = pose_message.y;
-    // cur_theta = pose_message.theta;
 }
 
 double euclidean_distance(double x1, double y1, double x2, double y2)
@@ -244,8 +234,7 @@ double linear_velocity(turtlesim::Pose goal)
 
     double distance = euclidean_distance(cur_pose.x, cur_pose.y, goal.x, goal.y);
 
-    //cout << "Distance: " << distance << endl;
-
+    // The closer the turtle is to the goal position, the slower it moves
     return kv * distance;
 }
 
@@ -256,11 +245,13 @@ double angular_velocity(turtlesim::Pose goal)
     return ka * (getTheta(getAngle(goal)) - getTheta(cur_pose.theta));
 }
 
+// The function determines in which direction (meaning at what angle) it should move to get from the current position to the goal position.
 double getAngle(turtlesim::Pose goal)
 {
     return atan2(goal.y - cur_pose.y, goal.x - cur_pose.x);
 }
 
+// The function makes the turtle move to the given goal.
 void move2goal(turtlesim::Pose goal)
 {
 
@@ -271,36 +262,24 @@ void move2goal(turtlesim::Pose goal)
     {
         // std::cout << "x: " << cur_pose.x << std::endl << "y: " << cur_pose.y << std::endl << "theta: " << cur_pose.theta << std::endl;
 
+        // Sets the linear velocity in the direction of the x-axis to a decreasing speed (look at linear_velocity function) depending on where the goal is.
         vel_msg.linear.x = linear_velocity(goal);
         vel_msg.linear.y = 0;
         vel_msg.linear.z = 0;
 
+        // Sets the angular veloity around the z-axis to a speed (look at angular_velocity function) depending on the where the goal is.
         vel_msg.angular.x = 0;
         vel_msg.angular.y = 0;
         vel_msg.angular.z = angular_velocity(goal);
 
         vel_pub.publish(vel_msg);
 
-        //cout << "still looping" << endl;
         loop_rate.sleep();
         ros::spinOnce();
     }
-    //setAllVelocityZero();
+
+    // Sets the velocity (in all directions and rotations) to zero.
     vel_msg.linear.x = 0;
     vel_msg.angular.z = 0;
     vel_pub.publish(vel_msg);
-}
-
-void setAllVelocityZero()
-{
-    geometry_msgs::Twist vel_msg;
-    vel_msg.linear.x = 0;
-    vel_msg.linear.y = 0;
-    vel_msg.linear.z = 0;
-
-    vel_msg.angular.x = 0;
-    vel_msg.angular.y = 0;
-    vel_msg.angular.z = 0;
-    vel_pub.publish(vel_msg);
-    ros::spinOnce();
 }
