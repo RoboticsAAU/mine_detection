@@ -10,9 +10,8 @@ using namespace std;
 ros::Publisher vel_pub;
 ros::Subscriber sub_pose;
 
-class Vector2D
+struct Vector2D
 {
-public:
     double x;
     double y;
 };
@@ -162,8 +161,7 @@ void rotate(double angular_velocity, double desired_angle)
     vel_msg.angular.y = 0;
     ros::spinOnce();
     // Rotates either clockwise (if=true) or counterclockwise (if=false) depending on which is shortest.
-    if (desired_angle - getTheta(cur_pose.theta) > M_PI ||
-        (desired_angle < getTheta(cur_pose.theta) && (getTheta(cur_pose.theta) - desired_angle) < M_PI))
+    if (IsClockwise(getTheta(cur_pose.theta),desired_angle))
     {
         vel_msg.angular.z = -fabs(angular_velocity);
     }
