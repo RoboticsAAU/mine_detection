@@ -32,6 +32,7 @@ double linear_velocity(turtlesim::Pose goal);
 double angular_velocity(turtlesim::Pose goal);
 double getAngle(turtlesim::Pose goal);
 void move2goal(turtlesim::Pose goal);
+void setAllVelocityZero();
 
 const double distance_tolerance = 0.01;
 
@@ -116,12 +117,8 @@ void move(double speed, double distance, bool isForward)
     {
         vel_msg.linear.x = -abs(speed);
     }
-    vel_msg.linear.y = 0;
-    vel_msg.linear.z = 0;
 
-    vel_msg.angular.x = 0;
-    vel_msg.angular.y = 0;
-    vel_msg.angular.z = 0;
+    setAllVelocityZero();
 
     double t0 = ros::Time::now().toSec();
     double current_distance = 0.0;
@@ -152,16 +149,12 @@ double getTheta(double angle)
 void rotate(double angular_velocity, double desired_angle)
 {
     geometry_msgs::Twist vel_msg;
-    vel_msg.linear.x = 0;
-    vel_msg.linear.y = 0;
-    vel_msg.linear.z = 0;
 
-    // Set angular velocity to 0.
-    vel_msg.angular.x = 0;
-    vel_msg.angular.y = 0;
-    ros::spinOnce();
+    setAllVelocityZero();
+    //ros::spinOnce();
+
     // Rotates either clockwise (if=true) or counterclockwise (if=false) depending on which is shortest.
-    if (IsClockwise(getTheta(cur_pose.theta),desired_angle))
+    if (IsClockwise(getTheta(cur_pose.theta), desired_angle))
     {
         vel_msg.angular.z = -fabs(angular_velocity);
     }
@@ -175,7 +168,6 @@ void rotate(double angular_velocity, double desired_angle)
     // Rotates until turtle has rotated to desired angle (within 0.05 radians).
     do
     {
-
         vel_pub.publish(vel_msg);
         ros::spinOnce();
         loop_rate.sleep();
@@ -289,7 +281,20 @@ void move2goal(turtlesim::Pose goal)
             ros::spinOnce();
         }
     }
-    vel_msg.linear.x = 0;
-    vel_msg.angular.z = 0;
+    setAllVelocityZero();
+    // vel_msg.linear.x = 0;
+    // vel_msg.angular.z = 0;
     vel_pub.publish(vel_msg);
+}
+
+void setAllVelocityZero()
+{
+    geometry_msgs::Twist vel_msg;
+    vel_msg.linear.y = 0;
+    vel_msg.linear.z = 0;
+
+    vel_msg.angular.x = 0;
+    vel_msg.angular.y = 0;
+    vel_msg.angular.z = 0;
+    ros::spinOnce();
 }
