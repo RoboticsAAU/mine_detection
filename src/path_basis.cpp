@@ -150,6 +150,17 @@ int main(int argc, char *argv[])
 
     turtlesim::Pose goal_pose;
 
+    
+    //create instance of the Move class.
+    Move move_instance;
+   
+    //create a pointer to the publisher, which holds the memory address of the pointer.
+    ros::Publisher* vel_pub_ptr = &vel_pub;
+    
+    //call the move function, and pass the pointer in as an argument. 
+    move_instance.move(2.0,2.0,true,vel_pub_ptr);
+
+    std::cin.get();
     // The while loop fixes a bug where the turtle's coordinates are wrong when it spawns, by waiting for the turle's position to be updated.
     // The turtle thinks it spawns at (0 ; 0), but it actually spawns at around (5,5 ; 5,5))
     while (cur_pose.x == 0)
