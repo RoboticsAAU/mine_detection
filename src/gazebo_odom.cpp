@@ -5,20 +5,20 @@
 
 ros::Subscriber sub_pose;
 
-
-
 #pragma region Quaterion To Euler Angles conversion
-struct Quaternion{
+struct Quaternion
+{
     double x, y, z, w;
 };
 
-struct EulerAngles {
+struct EulerAngles
+{
     double roll, pitch, yaw;
 };
 
-
 //convert quarternion into eulerangles.
-EulerAngles ToEulerAngles(Quaternion q){
+EulerAngles ToEulerAngles(Quaternion q)
+{
     EulerAngles angles;
 
     //roll (x axis rotation)
@@ -43,10 +43,10 @@ EulerAngles ToEulerAngles(Quaternion q){
 }
 #pragma endregion
 
-
-void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message){
+void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message)
+{
     //ROS_INFO_STREAM("Angular: " << pose_message->twist.twist.angular.z << ", Linear: " << pose_message->twist.twist.linear.x );
-    
+
     Quaternion q;
 
     //assign values of pose message to quaternion.
@@ -55,19 +55,15 @@ void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message){
     q.z = pose_message->pose.pose.orientation.z;
     q.w = pose_message->pose.pose.orientation.w;
 
-
     double yaw = ToEulerAngles(q).yaw + M_PI;
     double pitch = ToEulerAngles(q).pitch;
     double roll = ToEulerAngles(q).roll;
 
     std::cout << "yaw: " << yaw << std::endl;
     std::cout << "pitch: " << pitch << std::endl;
-    std::cout << "roll: " << roll << std::endl << std::endl;
-
+    std::cout << "roll: " << roll << std::endl
+              << std::endl;
 }
-
-
-
 
 int main(int argc, char *argv[])
 {
@@ -76,9 +72,8 @@ int main(int argc, char *argv[])
 
     sub_pose = n.subscribe("/odom", 10, &poseCallback);
 
-    while(ros::ok()){
+    while (ros::ok())
+    {
         ros::spinOnce();
     }
 }
-
-

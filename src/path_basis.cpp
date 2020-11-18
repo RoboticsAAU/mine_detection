@@ -9,12 +9,11 @@
 
 using namespace std;
 
-#define Log(name,x) std::cout << name << ": " <<  x << std::endl;
+#define Log(name, x) std::cout << name << ": " << x << std::endl;
 
 ros::Publisher reset_pub;
 ros::Publisher vel_pub;
 ros::Subscriber sub_pose;
-
 
 struct Vector2D
 {
@@ -43,21 +42,22 @@ const double distance_tolerance = 0.01;
 
 turtlesim::Pose cur_pose;
 
-
-
-#pragma region Quaterion To Euler Angles conversion
-struct Quaternion{
+#pragma region Quaternion To Euler Angles conversion
+struct Quaternion
+{
     double x, y, z, w;
 };
 
-struct EulerAngles {
+struct EulerAngles
+{
     double roll, pitch, yaw;
 };
 
 EulerAngles angles;
 
 //convert quarternion into eulerangles.
-EulerAngles ToEulerAngles(Quaternion q){
+EulerAngles ToEulerAngles(Quaternion q)
+{
     EulerAngles angles;
 
     //roll (x axis rotation)
@@ -96,32 +96,30 @@ void poseCallback(const turtlesim::Pose::ConstPtr &pose_message)
 }
 */
 
-void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message){
+void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message)
+{
     //ROS_INFO_STREAM("Angular: " << pose_message->twist.twist.angular.z << ", Linear: " << pose_message->twist.twist.linear.x );
 
-    //get the x,y position.
+    // Get the x,y position.
     cur_pose.x = pose_message->pose.pose.position.x;
     cur_pose.y = pose_message->pose.pose.position.y;
 
-
-    //Quaterion object q. 
+    // Quaternion object q.
     Quaternion q;
 
-    //assign values of pose message to quaternion.
+    // Assign values of pose message to quaternion.
     q.x = pose_message->pose.pose.orientation.x;
     q.y = pose_message->pose.pose.orientation.y;
     q.z = pose_message->pose.pose.orientation.z;
     q.w = pose_message->pose.pose.orientation.w;
 
-    //retrieve Euler angles, from quaternion pose message. 
+    // Retrieve Euler angles from quaternion pose message.
     angles = ToEulerAngles(q);
 
     cur_pose.theta = angles.yaw;
 
     std::cout << "angle: " << angles.yaw << " x: " << cur_pose.x << " y: " << cur_pose.y << std::endl;
-
 }
-
 
 int main(int argc, char *argv[])
 {
@@ -132,11 +130,12 @@ int main(int argc, char *argv[])
     double distance, angle;
     bool isForward, clockwise;
 
-    reset_pub = n.advertise<std_msgs::Empty>("/mobile_base/commands/reset_odometry",10);
+    reset_pub = n.advertise<std_msgs::Empty>("/mobile_base/commands/reset_odometry", 10);
     vel_pub = n.advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/navi", 10);
     sub_pose = n.subscribe("/odom", 1000, &poseCallback);
 
-    while(reset_pub.getNumSubscribers() == 0){
+    while (reset_pub.getNumSubscribers() == 0)
+    {
         ros::spinOnce();
     }
     std_msgs::Empty e;
@@ -146,21 +145,18 @@ int main(int argc, char *argv[])
 
     turtlesim::Pose goal_pose;
 
-    // The while loop fixes a bug where the turtles coordinates are wrong when it spawns, by waiting for the turles position to be updated.
-    // The turtle thinks it spawns at (0 ; 0), but it actually spawns around (5,5 ; 5,5))
-
-    // while(ros::ok()){
-    //     ros::spinOnce();
-    // }
-
-    while(cur_pose.x == 0){
+    // The while loop fixes a bug where the turtle's coordinates are wrong when it spawns, by waiting for the turle's position to be updated.
+    // The turtle thinks it spawns at (0 ; 0), but it actually spawns at around (5,5 ; 5,5))
+    while (cur_pose.x == 0)
+    {
         ros::spinOnce();
     }
 
-
+    // The for loop as a whole is what makes the turtle move to the correct places in the correct order.
+    // The outmost for loop is the overall amount of straight lines laterally (It does 10 lines).
     for (int i = 1; i < 11; i++)
     {
-
+        // When the x-coordinate is odd, the turtle moves upwards (increase in y-values).
         if (i % 2 == 1)
         {
             for (int j = 1; j < 11; j++)
@@ -172,6 +168,7 @@ int main(int argc, char *argv[])
                 move2goal(goal_pose);
             }
         }
+        // When the x-coordinate is even, the turtle moves downwards (decrease in y-values).
         else
         {
             for (int j = 10; j > 0; j--)
@@ -183,12 +180,11 @@ int main(int argc, char *argv[])
                 move2goal(goal_pose);
             }
         }
+        // The turtle moves to the side when a new iteration happens (since the x-value increases by 1).
     }
 
     return 0;
 }
-
-
 
 /**
  * makes the robot move forward with a certain linear velocity for a
@@ -309,7 +305,6 @@ Vector2D vectorByAngle(double angle)
     return vector;
 }
 #pragma endregion
-
 
 double euclidean_distance(double x1, double y1, double x2, double y2)
 {
