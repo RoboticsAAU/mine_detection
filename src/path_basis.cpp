@@ -321,18 +321,21 @@ double euclidean_distance(double x1, double y1, double x2, double y2)
 double linear_velocity(turtlesim::Pose goal)
 {
     double kv = 0.5;
+    double max_linear_vel = 0.5;
 
-    double distance = euclidean_distance(cur_pose.x, cur_pose.y, goal.x, goal.y);
-    //Log("Distance", distance);
-    // The closer the turtle is to the goal position, the slower it moves
-    return kv * distance;
+    double linear_vel = kv * euclidean_distance(cur_pose.x, cur_pose.y, goal.x, goal.y);
+
+    return fabs(linear_vel) > max_linear_vel ? copysign(max_linear_vel,linear_vel) : linear_vel;
 }
 
 double angular_velocity(turtlesim::Pose goal)
 {
     double ka = 0.5;
+    double max_angular_vel = 0.5;
 
-    return ka * (getTheta(getAngle(goal)) - getTheta(cur_pose.theta));
+    double angular_vel = ka * (getTheta(getAngle(goal)) - getTheta(cur_pose.theta));
+
+    return fabs(angular_vel) > max_angular_vel ? copysign(max_angular_vel,angular_vel) : angular_vel;
 }
 
 // The function determines in which direction (meaning at what angle) it should move to get from the current position to the goal position.
