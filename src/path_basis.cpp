@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
         ros::spinOnce();
     }
 
-    // The for loop as a whole is what makes the turtle move to the correct places in the correct order.
+    // The for loop as a whole is what makes the turtle move to the correct places in the correct order, thus making the boustrophedon decomposition.
     // The outmost for loop is the overall amount of straight lines laterally (It does 10 lines).
     for (int i = 1; i < 11; i++)
     {
