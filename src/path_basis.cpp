@@ -191,35 +191,7 @@ int main(int argc, char *argv[])
  * certain distance in a forward or backward straight direction.
  * */
 
-void move(double speed, double distance, bool isForward)
-{
-    geometry_msgs::Twist vel_msg;
 
-    if (isForward)
-        vel_msg.linear.x = abs(speed);
-    else
-    {
-        vel_msg.linear.x = -abs(speed);
-    }
-
-    double t0 = ros::Time::now().toSec();
-    double current_distance = 0.0;
-
-    ros::Rate loop_rate(5);
-    do
-    {
-        vel_pub.publish(vel_msg);
-        double t1 = ros::Time::now().toSec();
-        current_distance = speed * (t1 - t0);
-        ros::spinOnce();
-        loop_rate.sleep();
-
-    } while (current_distance < distance);
-    vel_msg.linear.x = 0;
-    vel_pub.publish(vel_msg);
-
-    //distance = speed * time
-}
 
 double getTheta(double angle)
 {
