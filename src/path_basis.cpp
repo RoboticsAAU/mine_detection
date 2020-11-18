@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
 
     reset_pub = n.advertise<std_msgs::Empty>("/mobile_base/commands/reset_odometry", 10);
     vel_pub = n.advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/navi", 10);
-    sub_pose = n.subscribe("/odom", 1000, &poseCallback);
+    sub_pose = n.subscribe("/mobile_base/sensors/imu_data", 1000, &poseCallback);
 
     while (reset_pub.getNumSubscribers() == 0)
     {
