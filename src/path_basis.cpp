@@ -7,13 +7,20 @@
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/Empty.h>
 
+#include <move.h>
+
 using namespace std;
+using namespace N;
 
 #define Log(name, x) std::cout << name << ": " << x << std::endl;
 
 ros::Publisher reset_pub;
 ros::Publisher vel_pub;
 ros::Subscriber sub_pose;
+
+
+
+
 
 struct Vector2D
 {
@@ -26,9 +33,7 @@ bool VectorInUpperQuadrants(Vector2D vector);
 Vector2D rotateVectorByAngle(double angle, Vector2D vector);
 Vector2D vectorByAngle(double angle);
 
-// Method to move the robot straight.
 
-void move(double speed, double distance, bool isForward);
 double getTheta(double angle);
 void rotate(turtlesim::Pose goal, double angle);
 void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message);
