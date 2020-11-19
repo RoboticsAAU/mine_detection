@@ -43,25 +43,44 @@ int main (int argc, char** argv){
 
     while (true)
     {
-        Mat imgOriginal;
+        Mat imgOriginal; //make an ampty array
 
-        bool bSuccess = cap.read(imgOriginal); //reads a new frame from camera
+        bool bSuccess = cap.read(imgOriginal); //reads a new frame from camera and puts it into imgOriginal
 
         if (!bSuccess) { //if image cant be read, break the loop
         cout << "Cannot read frame from video stream" << endl;
         break;
         }
 
-        Mat imgHSV;
+        Mat imgHSV; //make an empty array
 
-        cvtColor(imgOriginal, imgHSV, COLOR_BGR2HSV); //converts RGB colour to Hue, Saturation, Value
+        cvtColor(imgOriginal, imgHSV, COLOR_BGR2HSV); //converts RGB colour to Hue, Saturation, Value and puts it intp imgHSV
 
-        Mat imgThreshholded;
+        Mat imgThresholded;
 
-        //inRange(imgHSV, Scalar);
+        inRange(imgHSV, Scalar(iLowH, iLowS, iLowV), Scalar(iHighH, iHighS, iHighV), imgThresholded); //Decides wether a pixel is within the threshold or not
 
+//Erosion og dilation skal evalueres i nødvendighed for optimering
+        //morphological opening (removes small objects from the foreground to reduce noise)
+        erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5,5)));
+        //adds foreground
+        dilate(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5,5)));
+
+        //morphological opening (removes small objects from the foreground to reduce noise)
+        dilate(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5,5)));
+        //adds foreground
+        erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5,5)));
+
+        imshow("Thresholded image", imgThresholded); //shows the tresholded image
+
+        imshow("Original", imgOriginal); //shows the original image
+
+        if(waitKey(30) == 27){
+            cout << "esc key is pressed by user" << endl;
+            break;
+        }
     }    
-
+    return 0;
 }
 
 
