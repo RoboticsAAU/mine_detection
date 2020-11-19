@@ -5,5 +5,6 @@
     "files.associations": {
         "iostream": "cpp",
         "cmath": "cpp"
-    }
+    },
+    "ros.distro": "kinetic"
 }
