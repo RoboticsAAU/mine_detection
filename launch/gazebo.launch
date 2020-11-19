@@ -1,4 +1,6 @@
+
 <launch>
 <include file="$(find turtlebot_gazebo)/launch/turtlebot_world.launch"/>
+<remap from="/cmd_vel" to="/cmd_vel_mux/input/teleop" />
 <node name="path_basis_node" pkg="mine_detection" type="path_basis"/>
 </launch>

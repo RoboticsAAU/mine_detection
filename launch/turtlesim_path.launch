@@ -1,4 +1,5 @@
 <launch>
 <node name="turtlesim_node" pkg="turtlesim" type="turtlesim_node"/>
+<remap from="/cmd_vel" to="/turtle1/cmd_vel" />
 <node name="path_basis_node" pkg="mine_detection" type="path_basis"/>
 </launch>
