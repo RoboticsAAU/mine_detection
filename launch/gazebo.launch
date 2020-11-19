@@ -1,4 +1,4 @@
 <launch>
 <include file="$(find turtlebot_gazebo)/launch/turtlebot_world.launch"/>
-<node name="path_basis" pkg="mine_detection" type="path_basis_node"/>
+<node name="path_basis_node" pkg="mine_detection" type="path_basis"/>
 </launch>
