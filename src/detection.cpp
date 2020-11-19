@@ -12,12 +12,13 @@ int main (int argc, char** argv){
     int input = 0;
     cout << "Do you want to detect using the Camera, press 1 or load in a image, press 2,\n";
     cin >> input;
+    Mat imgOriginal;
     if (input == 2)
         {
         
         // Hvis vi skal teste programmet uden selve kameraet at et billede føres ind ved brug af denne kommando
-        Mat img = imread("D:/My OpenCV Website/Lady with a Guitar.jpg", IMREAD_COLOR);
-            if(img.empty())
+        imgOriginal = imread("D:/My OpenCV Website/Lady with a Guitar.jpg", IMREAD_COLOR);
+            if(imgOriginal.empty())
             {
             std::cout << "Could not read the image: " << std::endl;
             return 1;
@@ -35,6 +36,7 @@ int main (int argc, char** argv){
 
             while(true)
             {
+                
                 bool bSuccess = cap.read(imgOriginal); //reads a new frame from camera
                 if (!bSuccess)//if image cant be read, break the loop 
                 { 
@@ -73,7 +75,7 @@ int main (int argc, char** argv){
 
     while (true)
     {
-        Mat imgOriginal = Mat img;
+        
         Mat imgHSV; //make an empty array
 
         cvtColor(imgOriginal, imgHSV, COLOR_BGR2HSV); //converts RGB colour to Hue, Saturation, Value and puts it intp imgHSV
