@@ -132,7 +132,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(path_basis src/path_basis.cpp src/move.cpp)
+add_executable(path_basis src/path_basis.cpp src/move.cpp src/points_gen.cpp)
 add_executable(gazebo_odom src/gazebo_odom.cpp)
 
 

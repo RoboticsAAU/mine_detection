@@ -8,16 +8,17 @@
 #include <std_msgs/Empty.h>
 
 #include <move.h>
+#include <points_gen.h>
 
 using namespace std;
 using namespace N;
+using namespace Points_gen;
 
 #define Log(name, x) std::cout << name << ": " << x << std::endl;
 
 ros::Publisher reset_pub;
 ros::Publisher vel_pub;
 ros::Subscriber sub_pose;
-
 
 
 
@@ -160,6 +161,13 @@ int main(int argc, char *argv[])
     //call the move function, and pass the pointer in as an argument. 
     move_instance.move(2.0,2.0,true,vel_pub_ptr);
 
+    points_List points_instance;
+
+    Point p = {2,4};
+
+    std::vector<Points_gen::Point> vec;
+    vec = points_instance.gen_Point_list(&p);
+    std::cout << vec.at(0).x << "," << vec.at(0).y << std::endl;
     std::cin.get();
     // The while loop fixes a bug where the turtle's coordinates are wrong when it spawns, by waiting for the turle's position to be updated.
     // The turtle thinks it spawns at (0 ; 0), but it actually spawns at around (5,5 ; 5,5))
