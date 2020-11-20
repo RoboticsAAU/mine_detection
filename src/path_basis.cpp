@@ -36,7 +36,7 @@ Vector2D vectorByAngle(double angle);
 
 
 double getTheta(double angle);
-void rotate(turtlesim::Pose goal, double angle);
+void rotate(turtlesim::Pose goal);
 void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message);
 double euclidean_distance(double x1, double y1, double x2, double y2);
 double linear_velocity(turtlesim::Pose goal);
@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
                 std::cout << "Going to: " << goal_pose.x << " , " << goal_pose.y << endl;
                 goal_pose.x = i;
                 goal_pose.y = j;
-                rotate(goal_pose, getTheta(getAngle(goal_pose)));
+                rotate(goal_pose);
                 move2goal(goal_pose);
             }
         }
@@ -200,7 +200,7 @@ int main(int argc, char *argv[])
                 std::cout << "Going to: " << i << " , " << j << endl;
                 goal_pose.x = i;
                 goal_pose.y = j;
-                rotate(goal_pose, getTheta(getAngle(goal_pose)));
+                rotate(goal_pose);
                 move2goal(goal_pose);
             }
         }
@@ -225,9 +225,11 @@ double getTheta(double angle)
     return theta;
 }
 
-void rotate(turtlesim::Pose goal, double desired_angle)
+void rotate(turtlesim::Pose goal)
 {
     geometry_msgs::Twist vel_msg;
+
+    double desired_angle = getTheta(getAngle(goal));
 
     // Sets all the velocities equal to zero.
     vel_msg.linear.x = 0;
