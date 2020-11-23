@@ -195,14 +195,14 @@ int main(int argc, char *argv[])
 
         //std::cin.get();
     }
-    std::cin.get();
+    std::cout << "Done";
 
     // The while loop fixes a bug where the turtle's coordinates are wrong when it spawns, by waiting for the turle's position to be updated.
     // The turtle thinks it spawns at (0 ; 0), but it actually spawns at around (5,5 ; 5,5))
-    while (cur_pose.x == 0)
-    {
-        ros::spinOnce();
-    }
+    // while (cur_pose.x == 0)
+    // {
+    //     ros::spinOnce();
+    // }
     /*
     // The for loop as a whole is what makes the turtle move to the correct places in the correct order, thus making the boustrophedon decomposition.
     // The outmost for loop is the overall amount of straight lines laterally (It does 10 lines).
