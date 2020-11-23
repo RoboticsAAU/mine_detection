@@ -5,9 +5,8 @@
 
 using namespace Points_gen;
 
-std::vector<Point> points_List::gen_Point_list(Point* p){
+std::vector<Point> points_List::gen_Point_list(){
     std::vector<Point> vec;
-    //vec.push_back(*p);
 
     //std::cout << vec.capacity() << std::endl;
     double m = 5.0;

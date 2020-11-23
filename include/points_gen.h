@@ -6,12 +6,12 @@ namespace Points_gen{
     {
         double x;
         double y;
+        bool stop;
     };
 
     class points_List{
     public:
-        std::vector<Point>gen_Point_list(Point* p);
-        
+        std::vector<Point>gen_Point_list();
     };
 
     
