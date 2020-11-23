@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   
 )
 find_package(OpenCV)
+find_package(usb_cam)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -151,6 +152,7 @@ add_dependencies(detection ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED
 target_link_libraries(detection
   ${catkin_LIBRARIES}
   ${OpenCV_LIBS}
+  ${usb_cam_LIBS}
 )
 
 #############

@@ -17,7 +17,7 @@ int main (int argc, char** argv){
         {
         
         // Hvis vi skal teste programmet uden selve kameraet at et billede føres ind ved brug af denne kommando
-        imgOriginal = imread("D:/My OpenCV Website/Lady with a Guitar.jpg", IMREAD_COLOR);
+        imgOriginal = imread("/home/ros/Pictures/gay.jpg", IMREAD_COLOR);
             if(imgOriginal.empty())
             {
             std::cout << "Could not read the image: " << std::endl;
@@ -45,7 +45,7 @@ int main (int argc, char** argv){
                 }
             }
         }
-    namedWindow("control", CV_WINDOW_AUTOSIZE); //creates a windows called "Control"
+    namedWindow("Control", 2); //creates a windows called "Control"
 
     int iLowH = 0;
     int iHighH = 179;
@@ -61,16 +61,16 @@ int main (int argc, char** argv){
     //Value is amount of black mixed in
 
     //create trackbars in Control window
-    cvCreateTrackbar("LowH", "Control", &iLowH, 179);
-    cvCreateTrackbar("HighH", "Control", &iHighH, 179);
+    createTrackbar("LowH", "Control", &iLowH, 179);
+    createTrackbar("HighH", "Control", &iHighH, 179);
     //Hue 0-179
 
-    cvCreateTrackbar("LowS", "Control", &iLowS, 255);
-    cvCreateTrackbar("HighS", "Control", &iHighS, 255);
+    createTrackbar("LowS", "Control", &iLowS, 255);
+    createTrackbar("HighS", "Control", &iHighS, 255);
     //Saturation 0-255
 
-    cvCreateTrackbar("LowV", "Control", &iLowV, 255);
-    cvCreateTrackbar("HighV", "Control", &iHighV, 255);
+    createTrackbar("LowV", "Control", &iLowV, 255);
+    createTrackbar("HighV", "Control", &iHighV, 255);
     //Value 0-255
 
     while (true)
