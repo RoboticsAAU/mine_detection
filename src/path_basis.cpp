@@ -42,7 +42,7 @@ double euclidean_distance(double x1, double y1, double x2, double y2);
 double linear_velocity(Point goal);
 double angular_velocity(Point goal);
 double getAngle(Point goal);
-void move2goal(Point goal);
+void move2goal(Point goal,Point stop_goal);
 
 const double distance_tolerance = 0.05;
 
@@ -167,23 +167,33 @@ int main(int argc, char *argv[])
 
     points_List points_instance;
 
-    Point p = {2,4};
-
     std::vector<Points_gen::Point> vec;
-    vec = points_instance.gen_Point_list(&p);
-
-    std::cout << vec.at(0).x << "," << vec.at(0).y << std::endl;
-    std::cin.get();
-
+    vec = points_instance.gen_Point_list();
 
     for(Point p : vec){
+        if(p.stop) std::cout<< "stopping at: " << p.x << "," << p.y << std::endl;
+    }
+    std::cin.get();
+
+    for(int i = 0; i < vec.size()-1; i++){
+        Point p = vec.at(i);
+
         std::cout << "moving..." << std::endl;
         std::cout << "Going to: " << goal_pose.x << " , " << goal_pose.y << endl;
-        goal_pose.x = p.x;
-        goal_pose.y = p.y;
+        
+        rotate(p);
+        if(p.stop){
+            move2goal(p,p); 
+        }
+        else{
+            int temp = ++i;
+            while(!vec.at(temp).stop){
+                temp++;
+            }
+            move2goal(p,vec.at(temp));
+        }
+
         //std::cin.get();
-        rotate(goal_pose);
-        move2goal(goal_pose);
     }
     std::cin.get();
 
@@ -193,7 +203,7 @@ int main(int argc, char *argv[])
     {
         ros::spinOnce();
     }
-
+    /*
     // The for loop as a whole is what makes the turtle move to the correct places in the correct order, thus making the boustrophedon decomposition.
     // The outmost for loop is the overall amount of straight lines laterally (It does 10 lines).
     for (int i = 1; i < 11; i++)
@@ -224,6 +234,7 @@ int main(int argc, char *argv[])
         }
         // The turtle moves to the side when a new iteration happens (since the x-value increases by 1).
     }
+    */
 
     return 0;
 }
@@ -332,7 +343,7 @@ double euclidean_distance(double x1, double y1, double x2, double y2)
 double linear_velocity(Point goal)
 {
     double kv = 0.5;
-    double max_linear_vel = 0.5;
+    double max_linear_vel = 0.3;
 
     double linear_vel = kv * euclidean_distance(cur_pose.x, cur_pose.y, goal.x, goal.y);
 
@@ -341,7 +352,7 @@ double linear_velocity(Point goal)
 
 double angular_velocity(Point goal)
 {
-    double ka = 0.5;
+    double ka = 2;
     double max_angular_vel = 0.5;
 
     double angular_vel = ka * (getTheta(getAngle(goal)) - getTheta(cur_pose.theta));
@@ -356,7 +367,7 @@ double getAngle(Point goal)
 }
 
 // The function makes the turtle move to the given goal.
-void move2goal(Point goal)
+void move2goal(Point goal,Point stop_goal)
 {
 
     geometry_msgs::Twist vel_msg;
@@ -367,7 +378,7 @@ void move2goal(Point goal)
         // std::cout << "x: " << cur_pose.x << std::endl << "y: " << cur_pose.y << std::endl << "theta: " << cur_pose.theta << std::endl;
 
         // Sets the linear velocity in the direction of the x-axis to a decreasing speed (look at linear_velocity function) depending on where the goal is.
-        vel_msg.linear.x = linear_velocity(goal);
+        vel_msg.linear.x = linear_velocity(stop_goal);
         vel_msg.linear.y = 0;
         vel_msg.linear.z = 0;
 

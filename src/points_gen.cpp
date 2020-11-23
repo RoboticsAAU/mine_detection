@@ -24,16 +24,26 @@ std::vector<Point> points_List::gen_Point_list(){
                 Point p = {i,j};
                 std::cout << p.x << "," << p.y << std::endl;
                 //std::cin.get();
+                //p.stop = false;
+                if(j == robot_radius){
+                    p.stop = true;
+                }
                 vec.push_back(p);
+                
             } 
         }else{
             for(double j = n-robot_radius; j > 0; j -= 2*robot_radius){
                 Point p = {i,j};
                 std::cout << p.x << "," << p.y << std::endl;
                 //std::cin.get();
+                if(j == n-robot_radius) {
+                    p.stop = true;
+                }
                 vec.push_back(p);
+
             } 
         }
+        vec.at(vec.size()-1).stop = true;
         count++;
     }
     
