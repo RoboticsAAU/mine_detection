@@ -36,11 +36,12 @@ int main (int argc, char** argv){
 
             while(true)
             {
+                
                 bool bSuccess = cap.read(imgOriginal); //reads a new frame from camera
                 if (!bSuccess)//if image cant be read, break the loop 
                 { 
-                    cout << "Cannot read frame from video stream" << endl;
-                    break;
+                cout << "Cannot read frame from video stream" << endl;
+                break;
                 }
             }
         }
@@ -74,9 +75,13 @@ int main (int argc, char** argv){
 
     while (true)
     {
+        
         Mat imgHSV; //make an empty array
+
         cvtColor(imgOriginal, imgHSV, COLOR_BGR2HSV); //converts RGB colour to Hue, Saturation, Value and puts it intp imgHSV
+
         Mat imgThresholded;
+
         inRange(imgHSV, Scalar(iLowH, iLowS, iLowV), Scalar(iHighH, iHighS, iHighV), imgThresholded); //Decides wether a pixel is within the threshold or not
 
 //Erosion og dilation skal evalueres i nødvendighed for optimering
@@ -101,3 +106,6 @@ int main (int argc, char** argv){
     }    
     return 0;
 }
+
+
+
