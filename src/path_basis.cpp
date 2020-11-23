@@ -124,7 +124,7 @@ void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message)
 
     cur_pose.theta = angles.yaw;
 
-    std::cout << "angle: " << angles.yaw << " x: " << cur_pose.x << " y: " << cur_pose.y << std::endl;
+    //std::cout << "angle: " << angles.yaw << " x: " << cur_pose.x << " y: " << cur_pose.y << std::endl;
 }
 
 int main(int argc, char *argv[])
@@ -140,26 +140,30 @@ int main(int argc, char *argv[])
     vel_pub = n.advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/navi", 10);
     sub_pose = n.subscribe("/odom", 1000, &poseCallback);
 
+    std::cout << "Resetting odometry..." << std::endl;
     while (reset_pub.getNumSubscribers() == 0)
     {
         ros::spinOnce();
     }
+    
     std_msgs::Empty e;
     reset_pub.publish(e);
+    std::cout << "Done" << std::endl;
 
     ros::Rate loop_rate(10);
 
     turtlesim::Pose goal_pose;
 
+    std::cin.get();
     
     //create instance of the Move class.
-    Move move_instance;
+    //Move move_instance;
    
     //create a pointer to the publisher, which holds the memory address of the pointer.
-    ros::Publisher* vel_pub_ptr = &vel_pub;
+    //ros::Publisher* vel_pub_ptr = &vel_pub;
     
     //call the move function, and pass the pointer in as an argument. 
-    move_instance.move(2.0,2.0,true,vel_pub_ptr);
+    //move_instance.move(2.0,2.0,true,vel_pub_ptr);
 
     points_List points_instance;
 
@@ -167,8 +171,22 @@ int main(int argc, char *argv[])
 
     std::vector<Points_gen::Point> vec;
     vec = points_instance.gen_Point_list(&p);
+
     std::cout << vec.at(0).x << "," << vec.at(0).y << std::endl;
     std::cin.get();
+
+
+    for(Point p : vec){
+        std::cout << "moving..." << std::endl;
+        std::cout << "Going to: " << goal_pose.x << " , " << goal_pose.y << endl;
+        goal_pose.x = p.x;
+        goal_pose.y = p.y;
+        //std::cin.get();
+        rotate(goal_pose);
+        move2goal(goal_pose);
+    }
+    std::cin.get();
+
     // The while loop fixes a bug where the turtle's coordinates are wrong when it spawns, by waiting for the turle's position to be updated.
     // The turtle thinks it spawns at (0 ; 0), but it actually spawns at around (5,5 ; 5,5))
     while (cur_pose.x == 0)
