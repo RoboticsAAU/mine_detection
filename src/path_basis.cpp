@@ -36,13 +36,13 @@ Vector2D vectorByAngle(double angle);
 
 
 double getTheta(double angle);
-void rotate(turtlesim::Pose goal);
+void rotate(Point goal);
 void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message);
 double euclidean_distance(double x1, double y1, double x2, double y2);
-double linear_velocity(turtlesim::Pose goal);
-double angular_velocity(turtlesim::Pose goal);
-double getAngle(turtlesim::Pose goal);
-void move2goal(turtlesim::Pose goal);
+double linear_velocity(Point goal);
+double angular_velocity(Point goal);
+double getAngle(Point goal);
+void move2goal(Point goal);
 
 const double distance_tolerance = 0.05;
 
@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
 
     ros::Rate loop_rate(10);
 
-    turtlesim::Pose goal_pose;
+    Point goal_pose;
 
     std::cin.get();
     
@@ -243,7 +243,7 @@ double getTheta(double angle)
     return theta;
 }
 
-void rotate(turtlesim::Pose goal)
+void rotate(Point goal)
 {
     geometry_msgs::Twist vel_msg;
 
@@ -329,7 +329,7 @@ double euclidean_distance(double x1, double y1, double x2, double y2)
     return sqrt(pow((x2 - x1), 2) + pow((y2 - y1), 2));
 }
 
-double linear_velocity(turtlesim::Pose goal)
+double linear_velocity(Point goal)
 {
     double kv = 0.5;
     double max_linear_vel = 0.5;
@@ -339,7 +339,7 @@ double linear_velocity(turtlesim::Pose goal)
     return fabs(linear_vel) > max_linear_vel ? copysign(max_linear_vel,linear_vel) : linear_vel;
 }
 
-double angular_velocity(turtlesim::Pose goal)
+double angular_velocity(Point goal)
 {
     double ka = 0.5;
     double max_angular_vel = 0.5;
@@ -350,13 +350,13 @@ double angular_velocity(turtlesim::Pose goal)
 }
 
 // The function determines in which direction (meaning at what angle) it should move to get from the current position to the goal position.
-double getAngle(turtlesim::Pose goal)
+double getAngle(Point goal)
 {
     return atan2(goal.y - cur_pose.y, goal.x - cur_pose.x);
 }
 
 // The function makes the turtle move to the given goal.
-void move2goal(turtlesim::Pose goal)
+void move2goal(Point goal)
 {
 
     geometry_msgs::Twist vel_msg;
