@@ -137,6 +137,7 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(detection src/detection.cpp)
+add_executable(paper_detection src/paper_detection.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -147,9 +148,16 @@ add_executable(detection src/detection.cpp)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(detection ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(paper_detection ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(detection
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBS}
+  ${usb_cam_LIBS}
+)
+
+target_link_libraries(paper_detection
   ${catkin_LIBRARIES}
   ${OpenCV_LIBS}
   ${usb_cam_LIBS}
