@@ -21,7 +21,7 @@ ros::Publisher vel_pub;
 ros::Subscriber sub_pose;
 
 
-
+turtlesim::Pose cur_pose;
 
 struct Vector2D
 {
@@ -45,79 +45,6 @@ double getAngle(Point goal);
 void move2goal(Point goal,Point stop_goal);
 
 const double distance_tolerance = 0.05;
-
-struct EulerAngles
-{
-    double roll, pitch, yaw;
-};
-
-EulerAngles angles;
-
-//convert quarternion into eulerangles.
-EulerAngles ToEulerAngles(Quaternion q)
-{
-    EulerAngles angles;
-
-    //roll (x axis rotation)
-    double sinr_cosp = 2 * (q.w * q.x - q.y * q.z);
-    double cosr_cosp = 1 - 2 * (q.x * q.x + q.y * q.y);
-    angles.roll = atan2(sinr_cosp, cosr_cosp);
-
-    //pitch (y axis rotation)
-    double sinp = 2 * (q.w * q.y - q.z * q.x);
-    if (abs(sinp) >= 1)
-        //copysign returns the magnitude of M_PI/2 with the sign of sinp
-        angles.pitch = copysign(M_PI / 2, sinp); // use 90 degrees if out of range
-    else
-        angles.pitch = asin(sinp);
-
-    // yaw (z-axis rotation)
-    double siny_cosp = 2 * (q.w * q.z + q.x * q.y);
-    double cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
-    //calculate yaw, and make the yaw angle be 0 < yaw < 2pi.
-    angles.yaw = std::atan2(siny_cosp, cosy_cosp);
-
-    return angles;
-}
-#pragma endregion
-
-/*
-void poseCallback(const turtlesim::Pose::ConstPtr &pose_message)
-{
-
-    cur_pose.x = pose_message->x;
-    cur_pose.y = pose_message->y;
-    cur_pose.theta = pose_message->theta;
-    //ROS_INFO_STREAM("position=(" << cur_pose.x << "," << cur_pose.y << ")" << " angle= " << cur_pose.theta );
-
-    //std::cout << "x: " << cur_pose.x << std::endl << "y: " << cur_pose.y << std::endl << "theta: " << cur_pose.theta << std::endl;
-}
-*/
-
-void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message)
-{
-    //ROS_INFO_STREAM("Angular: " << pose_message->twist.twist.angular.z << ", Linear: " << pose_message->twist.twist.linear.x );
-
-    // Get the x,y position.
-    cur_pose.x = pose_message->pose.pose.position.x;
-    cur_pose.y = pose_message->pose.pose.position.y;
-
-    // Quaternion object q.
-    Quaternion q;
-
-    // Assign values of pose message to quaternion.
-    q.x = pose_message->pose.pose.orientation.x;
-    q.y = pose_message->pose.pose.orientation.y;
-    q.z = pose_message->pose.pose.orientation.z;
-    q.w = pose_message->pose.pose.orientation.w;
-
-    // Retrieve Euler angles from quaternion pose message.
-    angles = ToEulerAngles(q);
-
-    cur_pose.theta = angles.yaw;
-
-    std::cout << "angle: " << angles.yaw << " x: " << cur_pose.x << " y: " << cur_pose.y << std::endl;
-}
 
 #pragma region Quaternion To Euler Angles conversion
 struct Quaternion
@@ -225,7 +152,7 @@ int main(int argc, char *argv[])
     {
         ros::spinOnce();
     }
-    std_msgs::Empty e;
+    
     reset_pub.publish(e);
 
     Point goal_pose;
