@@ -1,76 +1,111 @@
-
+#include "ros/ros.h"
 #include <iostream>
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
+#include <math.h>
+#include <turtlesim/Pose.h>
 
 
 using namespace cv;
 using namespace std;
 
- int main( int argc, char** argv )
- {     
+ros::Publisher point_pub;
+ros::Subscriber sub_pose;
 
-     int contourColour[] = {0, 0, 255}; //colour R, G, B
-     int boundColour[] = {0, 255, 0}; //colour R, G, B
+class point
+{
+public:
+     double x;
+     double y;
+};
 
-    VideoCapture cap(0); //capture the video from webcam
+void poseCallback(const turtlesim::Pose::ConstPtr &pose_message);
+double degreesToRadians(double angleDegrees);
+point pixelsToMeters(point coordInPixels, double length);
+point rotatePointByAngle(double angle, point coord);
+point convertCoordinatesOfPoint(vector<Point> coord);
 
-    if ( !cap.isOpened() )  // if not success, exit program
-    {
-         cout << "Cannot open the web cam" << endl;
-         return -1;
-    }
+turtlesim::Pose cur_pose;
 
-    namedWindow("Control", CV_WINDOW_AUTOSIZE); //create a window called "Control"
+int main(int argc, char **argv)
+{
 
- int iLowH = 0;
- int iHighH = 179;
+     int boundColour[] = {0, 0, 255};
+     int contourColour[] = {0, 255, 0};
 
- int iLowS = 0; 
- int iHighS = 255;
+     ros::init(argc, argv, "mine_detector");
+     ros::NodeHandle n;
+     sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
 
- int iLowV = 0;
- int iHighV = 255;
+     VideoCapture cap(0); //Capture the video from webcam.
 
- //Create trackbars in "Control" window
- createTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
- createTrackbar("HighH", "Control", &iHighH, 179);
+     if (!cap.isOpened()) //If not success, exit program.
+     {
+          cout << "Cannot open the web cam" << endl;
+          return -1;
+     }
 
- createTrackbar("LowS", "Control", &iLowS, 255); //Saturation (0 - 255)
- createTrackbar("HighS", "Control", &iHighS, 255);
+     namedWindow("Control", CV_WINDOW_AUTOSIZE); //Create a window called "Control".
 
- createTrackbar("LowV", "Control", &iLowV, 255);//Value (0 - 255)
- createTrackbar("HighV", "Control", &iHighV, 255); 
+     int iLowH = 0;
+     int iHighH = 179;
 
-    while (true)
-    {
-        Mat imgOriginal;
+     int iLowS = 0;
+     int iHighS = 255;
 
-        bool bSuccess = cap.read(imgOriginal); // read a new frame from video
+     int iLowV = 0;
+     int iHighV = 255;
 
-
-
-         if (!bSuccess) //if not success, break loop
-        {
-             cout << "Cannot read a frame from video stream" << endl;
-             break;
-        }
-
-   Mat imgHSV;
-
-  cvtColor(imgOriginal, imgHSV, COLOR_BGR2HSV); //Convert the captured frame from BGR to HSV
  
-  Mat imgThresholded;
+     //Create trackbars in "Control" window.
+     createTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
+     createTrackbar("HighH", "Control", &iHighH, 179);
 
-  inRange(imgHSV, Scalar(iLowH, iLowS, iLowV), Scalar(iHighH, iHighS, iHighV), imgThresholded); //Threshold the image
-      
-  //morphological opening (removes small objects from the foreground)
-  erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) );
-  dilate( imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) ); 
+     createTrackbar("LowS", "Control", &iLowS, 255); //Saturation (0 - 255)
+     createTrackbar("HighS", "Control", &iHighS, 255);
 
-  //morphological closing (removes small holes from the foreground)
-  dilate( imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) ); 
-  erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) );
+     createTrackbar("LowV", "Control", &iLowV, 255); //Value (0 - 255)
+     createTrackbar("HighV", "Control", &iHighV, 255);
+
+     int iLastX = -1;
+     int iLastY = -1;
+
+     //Capture a temporary image from the camera.
+     Mat imgTmp;
+     cap.read(imgTmp);
+
+     //Create a black image with the size as the camera output.
+     Mat imgLines = Mat::zeros(imgTmp.size(), CV_8UC3);
+     ;
+
+     while (true)
+     {
+          Mat imgOriginal;
+
+          bool bSuccess = cap.read(imgOriginal); //Read a new frame from video.
+
+          if (!bSuccess) //If not success, break loop.
+          {
+               cout << "Cannot read a frame from video stream" << endl;
+               break;
+          }
+
+          Mat imgHSV;
+
+          cvtColor(imgOriginal, imgHSV, COLOR_BGR2HSV); //Convert the captured frame from BGR to HSV.
+
+          Mat imgThresholded;
+
+          inRange(imgHSV, Scalar(iLowH, iLowS, iLowV), Scalar(iHighH, iHighS, iHighV), imgThresholded); //Threshold the image.
+
+          //Morphological opening (removes small objects from the foreground).
+          erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+          dilate(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+
+          //Morphological closing (removes small holes from the foreground).
+          dilate(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+          erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+
 
      
      vector<vector<Point>> contours;
@@ -114,117 +149,99 @@ using namespace std;
    return 0;
 }
 
-// #include <iostream>
-// #include "opencv2/highgui/highgui.hpp"
-// #include "opencv2/imgproc/imgproc.hpp"
+//Everytime a message arrives, this function is called. It updates the robots coordinates and its orientation.
+void poseCallback(const turtlesim::Pose::ConstPtr &pose_message)
+{
+     cur_pose.x = pose_message->x;
+     cur_pose.y = pose_message->y;
+     cur_pose.theta = pose_message->theta;
+}
 
-// using namespace cv;
-// using namespace std;
+//Converts degrees to radians.
+double degreesToRadians(double angleDegrees)
+{
+     return angleDegrees * M_PI / 180;
+}
 
-// int main(int argc, char** argv){
-//     VideoCapture cap(0);
+//Converts a pioint from pixels to meters, based on the ratio between side length and number of pixels.
+point pixelsToMeters(point coordInPixels, double length)
+{
+     point coordInMeters;
+     coordInMeters.x = coordInPixels.x * (length / 1920);
+     coordInMeters.y = coordInPixels.y * (length / 1920);
+     return coordInMeters;
+}
 
-//     if(!cap.isOpened()){
-//         cout << "cannot open the webcam" << endl;
-//         return -1;
-//     }
+//Rotates a vector by a given angle.
+point rotatePointByAngle(double angle, point coord)
+{
+     point rotatedPoint;
+     rotatedPoint.x = coord.x * cos(angle - M_PI_2) + coord.y * (-sin(angle - M_PI_2));
+     rotatedPoint.y = coord.x * sin(angle - M_PI_2) + coord.y * cos(angle - M_PI_2);
+     return rotatedPoint;
+}
 
-//     namedWindow("Control", CV_WINDOW_AUTOSIZE);
+point convertCoordinatesOfPoint(vector<Point> coord)
+{
+     // Changable variables: Diagonal FOV of the camera, and the camera distance to the ground.
+     double FOV = 78;
+     double distFromGroundCam = 0.35;
 
-//     int iLowH = 0;
-//     int iHighH = 179;
+     //The following determines the measurements (length and width) of the area that the camera projects.
+     double halfFOV = degreesToRadians(FOV / 2);
+     double B = M_PI - M_PI_2 - halfFOV;
+     double a = (distFromGroundCam / sin(B)) * sin(halfFOV);
+     double alpha = atan2(9, 16);
 
-//     int iLowS = 0;
-//     int iHighS = 255;
+     double length = 2 * cos(alpha) * a;
+     double width = 2 * sin(alpha) * a;
+     cout << "Dimensions: " << length << " ; " << width << "\n";
 
-//     int iLowV = 0;
-//     int iHighV = 255;
+     //The coordinates of the found point in pixels.
+     point coordInPixel; //Use the coordinates that will be published, the current values are for testing only.
+     coordInPixel.x = coord.x;
+     coordInPixel.y = coord.y;
 
-//     cvCreateTrackbar("LowH", "Control", &iLowH, 179);
-//     cvCreateTrackbar("HighH", "Control", &iHighH, 179);
+     //Converts the point's coordinates from pixels to meters using the pixelsToMeters function.
+     point coordInMeters = pixelsToMeters(coordInPixel, length);
 
-//     cvCreateTrackbar("LowS", "Control", &iLowS, 255);
-//     cvCreateTrackbar("HighS", "Control", &iLowS, 255);
+     //Since the camera determines the coordinates of the point using the y-axis going downwards. The y-axis is reverted by adding a negative sign.
+     coordInMeters.y = -coordInMeters.y;
 
-//     cvCreateTrackbar("LowV", "Control", &iLowV, 255);
-//     cvCreateTrackbar("HighV", "Control", &iHighV, 255);
+     // The vector from the middle of the camera to the center of the robot. Measured as difference in x and y respectively and is changable.
+     point camCenterToRobotCenter;
+     camCenterToRobotCenter.x = 0;
+     camCenterToRobotCenter.y = -0.21;
 
-//     while(true){
-//     Mat imgOriginal;
+     //The vector of the area projected by the camera from Origo to the center of the area/camera.
+     point camOrigoToCamCenter;
+     camOrigoToCamCenter.x = 1.0 / 2.0 * length;
+     camOrigoToCamCenter.y = -1.0 / 2.0 * width;
+     cout << "camOrigoToCamCenter: " << camOrigoToCamCenter.x << " ; " << camOrigoToCamCenter.y << "\n";
 
-//     bool bSuccess = cap.read(imgOriginal);
+     //The vector from the projected area's Origo to the center of the robot.
+     //This is done to shift the coodinate-system of the camera to a coodinate-system with Origo in the robot's centre.
+     point camOrigoToRobot;
+     camOrigoToRobot.x = camCenterToRobotCenter.x + camOrigoToCamCenter.x;
+     camOrigoToRobot.y = camCenterToRobotCenter.y + camOrigoToCamCenter.y;
+     cout << "camOrigoToRobot: " << camOrigoToRobot.x << " ; " << camOrigoToRobot.y << "\n";
 
-//     if(!bSuccess){
+     //The vector of the found point from the robot centre (in meters).
+     point coordInMetersToRobotOrigo;
+     coordInMetersToRobotOrigo.x = coordInMeters.x - camOrigoToRobot.x;
+     coordInMetersToRobotOrigo.y = coordInMeters.y - camOrigoToRobot.y;
+     cout << "coordInMetersToRobotOrigo: " << coordInMetersToRobotOrigo.x << " ; " << coordInMetersToRobotOrigo.y << "\n";
 
-//         cout << "Cannot read a fram from video stream" << endl;
-//         break;
-//     }    
+     //The found point is rotated to fit with the robots coodinate-system.
+     //It is then rotated with the current angle of the robot measured from the x-axis to determine the correct position of the point compared to the robot.
+     point rotatedPoint = rotatePointByAngle(0, coordInMetersToRobotOrigo);
+     cout << "RotatedPoint: " << rotatedPoint.x << " ; " << rotatedPoint.y << "\n";
 
-//     Mat imgHSV;
-
-//     cvtColor(imgOriginal, imgHSV, COLOR_BGR2HSV);
-
-//     Mat imgThresholded;
-
-//     inRange(imgHSV, Scalar(iLowH, iLowS, iLowV), Scalar(iHighH, iHighS, iHighV), imgThresholded);
-
-//      //morphological opening (removes small objects from the foreground to reduce noise)
-//     erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5,5)));
-//     //adds foreground
-//     dilate(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5,5)));
-
-//     //morphological opening (removes small objects from the foreground to reduce noise)
-//     dilate(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5,5)));
-//     //adds foreground
-//     erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5,5)));
-
-
-//  int iLastX = -1; 
-//  int iLastY = -1;
-
-//   //Capture a temporary image from the camera
-//  Mat imgTmp;
-//  cap.read(imgTmp); 
-
-//  Mat imgLines = Mat::zeros( imgTmp.size(), CV_8UC3 );;
-
-//   Moments oMoments = moments(imgThresholded);
-
-//  double dM01 = oMoments.m01;
-//   double dM10 = oMoments.m10;
-//   double dArea = oMoments.m00;
-
-//   // if the area <= 10000, I consider that the there are no object in the image and it's because of the noise, the area is not zero 
-//   if (dArea > 100)
-//   {
-//    //calculate the position of the ball
-//    int posX = dM10 / dArea;
-//    int posY = dM01 / dArea;        
-        
-//    if (iLastX >= 0 && iLastY >= 0 && posX >= 0 && posY >= 0)
-//    {
-//     //Draw a red line from the previous point to the current point
-//     line(imgLines, Point(posX, posY), Point(iLastX, iLastY), Scalar(0,0,255), 2);
-//    }
-
-//    iLastX = posX;
-//    iLastY = posY;
-//   }
-
-//      //imgThresholded = imgThresholded + imgLines;
-//     imshow("Threshholded Image", imgThresholded);
-
-//  imgOriginal = imgOriginal + imgLines;
-//     imshow("Original", imgOriginal);
-
-
-
-//         if(waitKey(30)==27){
-//             cout << "esc key is pressed by user" << endl;
-//             break;
-//         }
-//     }
-
-//     return 0;
-
-// }
+     //The coordinates of the found paper from the robots Origin point.
+     //Determined from the coordinates of the robot from its Origin + the vector from the robot centre to the found point.
+     point paperPoint;
+     paperPoint.x = cur_pose.x + rotatedPoint.x;
+     paperPoint.y = cur_pose.y + rotatedPoint.y;
+     cout << "Paperpoint: " << paperPoint.x << " ; " << paperPoint.y << "\n";
+     return paperPoint;
+}
