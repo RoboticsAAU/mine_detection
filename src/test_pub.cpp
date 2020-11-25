@@ -20,6 +20,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "test");
     ros::NodeHandle n;
     sub_pose = n.subscribe("/paper_pose", 10, &poseCallback);
+    cout << cur_pose.x << " : " << cur_pose.y;
 
     return 0;
 }

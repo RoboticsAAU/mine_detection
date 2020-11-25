@@ -34,6 +34,7 @@ int main(int argc, char **argv)
 
      ros::init(argc, argv, "mine_detector");
      ros::NodeHandle n;
+
      sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
      point_pub = n.advertise<point>("/paper_pose", 10);
 
@@ -124,13 +125,14 @@ int main(int argc, char **argv)
 
           // }
 
-          for (int i = 0; sizeof(rectCenter); i++)
+          for (int i = 0; i < rectCenter.size(); i++)
           {
                point pointCent;
                pointCent.x = rectCenter[i].x;
                pointCent.y = rectCenter[i].y;
 
                point pointCentConverted = convertCoordinatesOfPoint(pointCent);
+               point_pub = pointCentConverted.x;
           }
 
           if (waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
