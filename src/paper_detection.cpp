@@ -118,12 +118,19 @@ int main(int argc, char **argv)
 
           vector<Point> rectCenter; //current boundingbox center coordinates
 
-          vector<Point> rectPos;     //position of boundingboxes from last frame
-          vector<Point> rectSurface; //surface area of boundingbox last frame
+     vector<int> rectSurface; //surface area of boundingbox last frame
+     vector<int> lastRectSurface; //surface area of boundingbox last frame
 
-          // for( size_t i = 0; i == boundbox.size(); i++ ){
-
-          // }
+     for( size_t i = 0; i == boundbox.size(); i++ ){//Calculate surface area of bounding boxes currently on the screen
+          rectSurface[i] = boundbox[i].width * boundbox[i].height;
+          if (rectSurface[i] < lastRectSurface[i]){ //if bounding rectangle is smaller than last frame save coordinates
+               rectCenter[i] = {boundbox[i].x, boundbox[i].y};
+          }
+     }
+     
+     for( size_t i = 0; i == boundbox.size(); i++ ){//Save bounding rectangle surface area
+          lastRectSurface[i] = rectSurface[i];
+     }
 
           for (int i = 0; i < rectCenter.size(); i++)
           {
@@ -135,12 +142,12 @@ int main(int argc, char **argv)
                point_pub = pointCentConverted.x;
           }
 
-          if (waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
-          {
-               cout << "esc key is pressed by user" << endl;
-               break;
-          }
-     }
+        if (waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
+       {
+          cout << "esc key is pressed by user" << endl;
+          break; 
+       }
+    }
 
      return 0;
 }
