@@ -36,7 +36,7 @@ int main(int argc, char **argv)
      ros::NodeHandle n;
 
      sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
-     point_pub = n.advertise<point>("/paper_pose", 10);
+     point_pub = n.advertise<point_coords.msg>("/paper_pose", 10);
 
      VideoCapture cap(0); //Capture the video from webcam.
 
