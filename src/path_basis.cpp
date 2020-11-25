@@ -20,9 +20,6 @@ ros::Publisher reset_pub;
 ros::Publisher vel_pub;
 ros::Subscriber sub_pose;
 
-
-
-
 struct Vector2D
 {
     double x;
@@ -34,7 +31,6 @@ bool VectorInUpperQuadrants(Vector2D vector);
 Vector2D rotateVectorByAngle(double angle, Vector2D vector);
 Vector2D vectorByAngle(double angle);
 
-
 double getTheta(double angle);
 void rotate(Point goal);
 void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message);
@@ -42,7 +38,7 @@ double euclidean_distance(double x1, double y1, double x2, double y2);
 double linear_velocity(Point goal);
 double angular_velocity(Point goal);
 double getAngle(Point goal);
-void move2goal(Point goal,Point stop_goal);
+void move2goal(Point goal, Point stop_goal);
 
 const double distance_tolerance = 0.05;
 
@@ -145,7 +141,7 @@ int main(int argc, char *argv[])
     {
         ros::spinOnce();
     }
-    
+
     std_msgs::Empty e;
     reset_pub.publish(e);
     std::cout << "Done" << std::endl;
@@ -155,14 +151,14 @@ int main(int argc, char *argv[])
     Point goal_pose;
 
     std::cin.get();
-    
+
     //create instance of the Move class.
     //Move move_instance;
-   
+
     //create a pointer to the publisher, which holds the memory address of the pointer.
     //ros::Publisher* vel_pub_ptr = &vel_pub;
-    
-    //call the move function, and pass the pointer in as an argument. 
+
+    //call the move function, and pass the pointer in as an argument.
     //move_instance.move(2.0,2.0,true,vel_pub_ptr);
 
     points_List points_instance;
@@ -170,27 +166,33 @@ int main(int argc, char *argv[])
     std::vector<Points_gen::Point> vec;
     vec = points_instance.gen_Point_list();
 
-    for(Point p : vec){
-        if(p.stop) std::cout<< "stopping at: " << p.x << "," << p.y << std::endl;
+    for (Point p : vec)
+    {
+        if (p.stop)
+            std::cout << "stopping at: " << p.x << "," << p.y << std::endl;
     }
     std::cin.get();
 
-    for(int i = 0; i < vec.size()-1; i++){
+    for (int i = 0; i < vec.size() - 1; i++)
+    {
         Point p = vec.at(i);
 
         std::cout << "moving..." << std::endl;
         std::cout << "Going to: " << goal_pose.x << " , " << goal_pose.y << endl;
-        
+
         rotate(p);
-        if(p.stop){
-            move2goal(p,p); 
+        if (p.stop)
+        {
+            move2goal(p, p);
         }
-        else{
+        else
+        {
             int temp = ++i;
-            while(!vec.at(temp).stop){
+            while (!vec.at(temp).stop)
+            {
                 temp++;
             }
-            move2goal(p,vec.at(temp));
+            move2goal(p, vec.at(temp));
         }
 
         //std::cin.get();
@@ -244,8 +246,6 @@ int main(int argc, char *argv[])
  * certain distance in a forward or backward straight direction.
  * */
 
-
-
 double getTheta(double angle)
 {
     //If theta is negative it is converted to the corresponding positive angle (Theta becomes negative when the turtle rotates clockwise).
@@ -271,20 +271,19 @@ void rotate(Point goal)
     ros::spinOnce();
 
     // Rotates either clockwise (if=true) or counterclockwise (if=false) depending on which is shortest.
-    
 
     ros::Rate loop_rate(1000);
     // Rotates until turtle has rotated to desired angle (within 0.02 radians).
     do
     {
         if (IsClockwise(getTheta(cur_pose.theta), desired_angle))
-    {
-        vel_msg.angular.z = -fabs(angular_velocity(goal));
-    }
-    else
-    {
-        vel_msg.angular.z = fabs(angular_velocity(goal));
-    }
+        {
+            vel_msg.angular.z = -fabs(angular_velocity(goal));
+        }
+        else
+        {
+            vel_msg.angular.z = fabs(angular_velocity(goal));
+        }
 
         vel_pub.publish(vel_msg);
         ros::spinOnce();
@@ -296,7 +295,7 @@ void rotate(Point goal)
     vel_pub.publish(vel_msg);
 }
 
-#pragma region WIP
+#pragma region Shortest rotation
 // The function determines if the shortest rotation between the actual angle and the desired angle is clockwise or counterclockwise.
 bool IsClockwise(double angleActual, double angleDesired)
 {
@@ -347,7 +346,7 @@ double linear_velocity(Point goal)
 
     double linear_vel = kv * euclidean_distance(cur_pose.x, cur_pose.y, goal.x, goal.y);
 
-    return fabs(linear_vel) > max_linear_vel ? copysign(max_linear_vel,linear_vel) : linear_vel;
+    return fabs(linear_vel) > max_linear_vel ? copysign(max_linear_vel, linear_vel) : linear_vel;
 }
 
 double angular_velocity(Point goal)
@@ -357,7 +356,7 @@ double angular_velocity(Point goal)
 
     double angular_vel = ka * (getTheta(getAngle(goal)) - getTheta(cur_pose.theta));
 
-    return fabs(angular_vel) > max_angular_vel ? copysign(max_angular_vel,angular_vel) : angular_vel;
+    return fabs(angular_vel) > max_angular_vel ? copysign(max_angular_vel, angular_vel) : angular_vel;
 }
 
 // The function determines in which direction (meaning at what angle) it should move to get from the current position to the goal position.
@@ -367,7 +366,7 @@ double getAngle(Point goal)
 }
 
 // The function makes the turtle move to the given goal.
-void move2goal(Point goal,Point stop_goal)
+void move2goal(Point goal, Point stop_goal)
 {
 
     geometry_msgs::Twist vel_msg;
