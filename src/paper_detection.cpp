@@ -18,27 +18,22 @@ class point
      double y;
 };
 void poseCallback(const turtlesim::Pose::ConstPtr& pose_message);
-double degreesToRadians (double angleDegrees)
-{
-return angleDegrees*M_PI/180;
-}
+double degreesToRadians (double angleDegrees);
 
-point pixelsToMeters ( point coordInPixels , double length )
-{
-     point coordInMeters;
-     coordInMeters.x = coordInPixels.x*(length/1920);
-     coordInMeters.y = coordInPixels.y*(length/1920);
-     return coordInMeters;
-}
+point rotatePointByAngle(double angle, point coord);
+point pixelsToMeters ( point coordInPixels , double length );
+
 
 turtlesim::Pose cur_pose;
 
  int main( int argc, char** argv )
  {
+      
       ros::init(argc,argv, "mine_detector");
       ros::NodeHandle n;
       sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
-  /*  VideoCapture cap(0); //capture the video from webcam
+      
+    VideoCapture cap(0); //capture the video from webcam
 
     if ( !cap.isOpened() )  // if not success, exit program
     {
@@ -121,7 +116,7 @@ turtlesim::Pose cur_pose;
    //calculate the position of the ball
    double posX = dM10 / dArea;
    double posY = dM01 / dArea;        
-   */
+   
         
   // Calculate the lenth of the cameras view on a surface depending on the cameras distance to the surface
   double FOV = 78;
@@ -134,31 +129,44 @@ turtlesim::Pose cur_pose;
   double width = 2*sin(alpha)*a;
 
   point coordInPixel; //Use the coordinates from the camera, the current values are for testing only.
-  coordInPixel.x = 450; 
-  coordInPixel.y = 543;
+  coordInPixel.x = posX; 
+  coordInPixel.y = posY;
   // convert from length in pixels to length in meters
   point coordInMeters = pixelsToMeters(coordInPixel,length);
-  cout << length << " : " << width << "\n";
-  cout << coordInMeters.x << " ; " << coordInMeters.y;
   coordInMeters.y = -coordInMeters.y; // convert from the cameras coordinate system with a reverted y-axis to the turtlebots normal coordinate system.
-  point robotCenterToCam; // We find the vector from the middle of the robot to the middle of the camera. 
-  robotCenterToCam.x = 0; 
-  robotCenterToCam.y = 0.21;
+  point camCenterToRobotCenter; // We find the vector from the middle of the robot to the middle of the camera. 
+  camCenterToRobotCenter.x = 0; 
+  camCenterToRobotCenter.y = -0.21; //this is a measured distance
   point camToOrigo;
-  camToOrigo.x = -1/2*length;
-  camToOrigo.y = 1/2*width;
-  point robotToOrigo;
-  robotToOrigo.x = robotCenterToCam.x + camToOrigo.x;
-  robotToOrigo.y = robotCenterToCam.y + camToOrigo.y;
+  camToOrigo.x = 1.0/2.0*length;
+  camToOrigo.y = -1.0/2.0*width;
+   cout << "Dimensions: " << length<< " ; " <<  width << "\n";
+
+   cout << "camToOrigo: " << camToOrigo.x << " ; " <<  camToOrigo.y << "\n";
+
+  point camOrigoToRobot;
+  camOrigoToRobot.x = camCenterToRobotCenter.x + camToOrigo.x;
+  camOrigoToRobot.y = camCenterToRobotCenter.y + camToOrigo.y;
+  cout << "camOrigoToRobot: " << camOrigoToRobot.x << " ; " <<  camOrigoToRobot.y << "\n";
+
   point coordInMetersToRobotOrigo;
-  coordInMetersToRobotOrigo.x = coordInMeters.x - robotToOrigo.x;
-  coordInMetersToRobotOrigo.y = coordInMeters.y - robotToOrigo.y;
+  coordInMetersToRobotOrigo.x = coordInMeters.x - camOrigoToRobot.x;
+  coordInMetersToRobotOrigo.y = coordInMeters.y - camOrigoToRobot.y;
+  cout << "coordInMetersToRobotOrigo: " << coordInMetersToRobotOrigo.x << " ; " <<  coordInMetersToRobotOrigo.y << "\n";
 
-  
-   /*
+  point rotatedPoint = rotatePointByAngle( 0, coordInMetersToRobotOrigo);
+  cout << "RotatedPoint: " << rotatedPoint.x << " ; " <<  rotatedPoint.y << "\n";
+
+  point robotCoord;
+  robotCoord.x = cur_pose.x;
+  robotCoord.y = cur_pose.y;
+  point paperPoint;
+  paperPoint.x = 3 + rotatedPoint.x; //3 and 4 are test coordinates and should be changed to robotCoord, when used with the robot.
+  paperPoint.y = 4 + rotatedPoint.y;
+  cout << "Paperpoint: " << paperPoint.x << " ; " <<  paperPoint.y << "\n";
+
+   
   imshow("Thresholded Image", imgThresholded); //show the thresholded image
-
-  imgOriginal = imgOriginal + imgLines;
   imshow("Original", imgOriginal); //show the original image
 
         if (waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
@@ -166,10 +174,22 @@ turtlesim::Pose cur_pose;
             cout << "esc key is pressed by user" << endl;
             break; 
        }
-    }
-     */
    return 0;
 }
+
+double degreesToRadians(double angleDegrees)
+{
+return angleDegrees*M_PI/180;
+}
+
+point pixelsToMeters(point coordInPixels , double length )
+{
+     point coordInMeters;
+     coordInMeters.x = coordInPixels.x*(length/1920);
+     coordInMeters.y = coordInPixels.y*(length/1920);
+     return coordInMeters;
+}
+
 void poseCallback(const turtlesim::Pose::ConstPtr& pose_message)
 {
     
@@ -178,118 +198,10 @@ void poseCallback(const turtlesim::Pose::ConstPtr& pose_message)
     cur_pose.y = pose_message ->y;
     cur_pose.theta = pose_message -> theta;
 }
-
-// #include <iostream>
-// #include "opencv2/highgui/highgui.hpp"
-// #include "opencv2/imgproc/imgproc.hpp"
-
-// using namespace cv;
-// using namespace std;
-
-// int main(int argc, char** argv){
-//     VideoCapture cap(0);
-
-//     if(!cap.isOpened()){
-//         cout << "cannot open the webcam" << endl;
-//         return -1;
-//     }
-
-//     namedWindow("Control", CV_WINDOW_AUTOSIZE);
-
-//     int iLowH = 0;
-//     int iHighH = 179;
-
-//     int iLowS = 0;
-//     int iHighS = 255;
-
-//     int iLowV = 0;
-//     int iHighV = 255;
-
-//     cvCreateTrackbar("LowH", "Control", &iLowH, 179);
-//     cvCreateTrackbar("HighH", "Control", &iHighH, 179);
-
-//     cvCreateTrackbar("LowS", "Control", &iLowS, 255);
-//     cvCreateTrackbar("HighS", "Control", &iLowS, 255);
-
-//     cvCreateTrackbar("LowV", "Control", &iLowV, 255);
-//     cvCreateTrackbar("HighV", "Control", &iHighV, 255);
-
-//     while(true){
-//     Mat imgOriginal;
-
-//     bool bSuccess = cap.read(imgOriginal);
-
-//     if(!bSuccess){
-
-//         cout << "Cannot read a fram from video stream" << endl;
-//         break;
-//     }    
-
-//     Mat imgHSV;
-
-//     cvtColor(imgOriginal, imgHSV, COLOR_BGR2HSV);
-
-//     Mat imgThresholded;
-
-//     inRange(imgHSV, Scalar(iLowH, iLowS, iLowV), Scalar(iHighH, iHighS, iHighV), imgThresholded);
-
-//      //morphological opening (removes small objects from the foreground to reduce noise)
-//     erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5,5)));
-//     //adds foreground
-//     dilate(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5,5)));
-
-//     //morphological opening (removes small objects from the foreground to reduce noise)
-//     dilate(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5,5)));
-//     //adds foreground
-//     erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5,5)));
-
-
-//  int iLastX = -1; 
-//  int iLastY = -1;
-
-//   //Capture a temporary image from the camera
-//  Mat imgTmp;
-//  cap.read(imgTmp); 
-
-//  Mat imgLines = Mat::zeros( imgTmp.size(), CV_8UC3 );;
-
-//   Moments oMoments = moments(imgThresholded);
-
-//  double dM01 = oMoments.m01;
-//   double dM10 = oMoments.m10;
-//   double dArea = oMoments.m00;
-
-//   // if the area <= 10000, I consider that the there are no object in the image and it's because of the noise, the area is not zero 
-//   if (dArea > 100)
-//   {
-//    //calculate the position of the ball
-//    int posX = dM10 / dArea;
-//    int posY = dM01 / dArea;        
-        
-//    if (iLastX >= 0 && iLastY >= 0 && posX >= 0 && posY >= 0)
-//    {
-//     //Draw a red line from the previous point to the current point
-//     line(imgLines, Point(posX, posY), Point(iLastX, iLastY), Scalar(0,0,255), 2);
-//    }
-
-//    iLastX = posX;
-//    iLastY = posY;
-//   }
-
-//      //imgThresholded = imgThresholded + imgLines;
-//     imshow("Threshholded Image", imgThresholded);
-
-//  imgOriginal = imgOriginal + imgLines;
-//     imshow("Original", imgOriginal);
-
-
-
-//         if(waitKey(30)==27){
-//             cout << "esc key is pressed by user" << endl;
-//             break;
-//         }
-//     }
-
-//     return 0;
-
-// }
+point rotatePointByAngle(double angle, point coord)
+{
+    point rotatedPoint;
+    rotatedPoint.x = coord.x * cos(angle - M_PI_2) + coord.y * (-sin(angle- M_PI_2));
+    rotatedPoint.y = coord.x * sin(angle- M_PI_2) + coord.y * cos(angle- M_PI_2);
+    return rotatedPoint;
+}
