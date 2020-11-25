@@ -5,7 +5,6 @@
 #include <math.h>
 #include <turtlesim/Pose.h>
 
-
 using namespace cv;
 using namespace std;
 
@@ -35,7 +34,9 @@ int main(int argc, char **argv)
 
      ros::init(argc, argv, "mine_detector");
      ros::NodeHandle n;
+
      sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
+     point_pub = n.advertise<point>("/paper_pose", 10);
 
      VideoCapture cap(0); //Capture the video from webcam.
 
@@ -56,7 +57,6 @@ int main(int argc, char **argv)
      int iLowV = 0;
      int iHighV = 255;
 
- 
      //Create trackbars in "Control" window.
      createTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
      createTrackbar("HighH", "Control", &iHighH, 179);
@@ -66,17 +66,6 @@ int main(int argc, char **argv)
 
      createTrackbar("LowV", "Control", &iLowV, 255); //Value (0 - 255)
      createTrackbar("HighV", "Control", &iHighV, 255);
-
-     int iLastX = -1;
-     int iLastY = -1;
-
-     //Capture a temporary image from the camera.
-     Mat imgTmp;
-     cap.read(imgTmp);
-
-     //Create a black image with the size as the camera output.
-     Mat imgLines = Mat::zeros(imgTmp.size(), CV_8UC3);
-     ;
 
      while (true)
      {
@@ -106,29 +95,28 @@ int main(int argc, char **argv)
           dilate(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
           erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 
+          vector<vector<Point>> contours;
 
-     
-     vector<vector<Point>> contours;
-  
-     findContours(imgThresholded, contours, RETR_TREE, CHAIN_APPROX_SIMPLE, Point(0,0));
+          findContours(imgThresholded, contours, RETR_TREE, CHAIN_APPROX_SIMPLE, Point(0, 0));
 
-     vector<Rect> boundbox(contours.size());
+          vector<Rect> boundbox(contours.size());
 
- 
-     for(size_t i = 0; i < contours.size(); i++){
-          approxPolyDP( Mat(contours[i]), contours[i], 3, true);
-          boundbox[i] = boundingRect(contours[i]);
-     }
+          for (size_t i = 0; i < contours.size(); i++)
+          {
+               approxPolyDP(Mat(contours[i]), contours[i], 3, true);
+               boundbox[i] = boundingRect(contours[i]);
+          }
 
-     for( size_t i = 0; i < contours.size(); i++ ){
-          rectangle( imgOriginal, boundbox[i].tl(), boundbox[i].br(), (boundColour[0], boundColour[1], boundColour[2]), 2, 8, 0 );    
-     }     
-     
-     drawContours(imgOriginal, contours, -1, (contourColour[0], contourColour[1], contourColour[2]), 3);
-     imshow("Thresholded Image", imgThresholded); //show the thresholded image
-     imshow("Original", imgOriginal); //show the original image
+          for (size_t i = 0; i < contours.size(); i++)
+          {
+               rectangle(imgOriginal, boundbox[i].tl(), boundbox[i].br(), (boundColour[0], boundColour[1], boundColour[2]), 2, 8, 0);
+          }
 
-     vector<Point> rectCenter; //current boundingbox center coordinates
+          drawContours(imgOriginal, contours, -1, (contourColour[0], contourColour[1], contourColour[2]), 3);
+          imshow("Thresholded Image", imgThresholded); //show the thresholded image
+          imshow("Original", imgOriginal);             //show the original image
+
+          vector<Point> rectCenter; //current boundingbox center coordinates
 
      vector<int> rectSurface; //surface area of boundingbox last frame
      vector<int> lastRectSurface; //surface area of boundingbox last frame
@@ -144,6 +132,15 @@ int main(int argc, char **argv)
           lastRectSurface[i] = rectSurface[i];
      }
 
+          for (int i = 0; i < rectCenter.size(); i++)
+          {
+               point pointCent;
+               pointCent.x = rectCenter[i].x;
+               pointCent.y = rectCenter[i].y;
+
+               point pointCentConverted = convertCoordinatesOfPoint(pointCent);
+               point_pub = pointCentConverted.x;
+          }
 
         if (waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
        {
@@ -152,7 +149,7 @@ int main(int argc, char **argv)
        }
     }
 
-   return 0;
+     return 0;
 }
 
 //Everytime a message arrives, this function is called. It updates the robots coordinates and its orientation.
@@ -187,7 +184,7 @@ point rotatePointByAngle(double angle, point coord)
      return rotatedPoint;
 }
 
-point convertCoordinatesOfPoint(vector<Point> coord)
+point convertCoordinatesOfPoint(point coord)
 {
      // Changable variables: Diagonal FOV of the camera, and the camera distance to the ground.
      double FOV = 78;
