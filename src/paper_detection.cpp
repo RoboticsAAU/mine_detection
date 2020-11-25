@@ -11,197 +11,213 @@ using namespace std;
 ros::Publisher point_pub;
 ros::Subscriber sub_pose;
 
-class point 
+class point
 {
-     public:
+public:
      double x;
      double y;
 };
-void poseCallback(const turtlesim::Pose::ConstPtr& pose_message);
-double degreesToRadians (double angleDegrees);
 
+void poseCallback(const turtlesim::Pose::ConstPtr &pose_message);
+double degreesToRadians(double angleDegrees);
+point pixelsToMeters(point coordInPixels, double length);
 point rotatePointByAngle(double angle, point coord);
-point pixelsToMeters ( point coordInPixels , double length );
-
 
 turtlesim::Pose cur_pose;
 
- int main( int argc, char** argv )
- {
-      
-      ros::init(argc,argv, "mine_detector");
-      ros::NodeHandle n;
-      sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
-      
-    VideoCapture cap(0); //capture the video from webcam
+int main(int argc, char **argv)
+{
 
-    if ( !cap.isOpened() )  // if not success, exit program
-    {
-         cout << "Cannot open the web cam" << endl;
-         return -1;
-    }
+     ros::init(argc, argv, "mine_detector");
+     ros::NodeHandle n;
+     sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
 
-    namedWindow("Control", CV_WINDOW_AUTOSIZE); //create a window called "Control"
+     VideoCapture cap(0); //Capture the video from webcam.
 
- int iLowH = 0;
- int iHighH = 179;
+     if (!cap.isOpened()) //If not success, exit program.
+     {
+          cout << "Cannot open the web cam" << endl;
+          return -1;
+     }
 
- int iLowS = 0; 
- int iHighS = 255;
+     namedWindow("Control", CV_WINDOW_AUTOSIZE); //Create a window called "Control".
 
- int iLowV = 0;
- int iHighV = 255;
+     int iLowH = 0;
+     int iHighH = 179;
 
- //Create trackbars in "Control" window
- createTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
- createTrackbar("HighH", "Control", &iHighH, 179);
+     int iLowS = 0;
+     int iHighS = 255;
 
- createTrackbar("LowS", "Control", &iLowS, 255); //Saturation (0 - 255)
- createTrackbar("HighS", "Control", &iHighS, 255);
+     int iLowV = 0;
+     int iHighV = 255;
 
- createTrackbar("LowV", "Control", &iLowV, 255);//Value (0 - 255)
- createTrackbar("HighV", "Control", &iHighV, 255);
+     //Create trackbars in "Control" window.
+     createTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
+     createTrackbar("HighH", "Control", &iHighH, 179);
 
- int iLastX = -1; 
- int iLastY = -1;
+     createTrackbar("LowS", "Control", &iLowS, 255); //Saturation (0 - 255)
+     createTrackbar("HighS", "Control", &iHighS, 255);
 
- //Capture a temporary image from the camera
- Mat imgTmp;
- cap.read(imgTmp); 
+     createTrackbar("LowV", "Control", &iLowV, 255); //Value (0 - 255)
+     createTrackbar("HighV", "Control", &iHighV, 255);
 
- //Create a black image with the size as the camera output
- Mat imgLines = Mat::zeros( imgTmp.size(), CV_8UC3 );;
- 
+     int iLastX = -1;
+     int iLastY = -1;
 
-    while (true)
-    {
-        Mat imgOriginal;
+     //Capture a temporary image from the camera.
+     Mat imgTmp;
+     cap.read(imgTmp);
 
-        bool bSuccess = cap.read(imgOriginal); // read a new frame from video
+     //Create a black image with the size as the camera output.
+     Mat imgLines = Mat::zeros(imgTmp.size(), CV_8UC3);
+     ;
 
+     while (true)
+     {
+          Mat imgOriginal;
 
+          bool bSuccess = cap.read(imgOriginal); //Read a new frame from video.
 
-         if (!bSuccess) //if not success, break loop
-        {
-             cout << "Cannot read a frame from video stream" << endl;
-             break;
-        }
+          if (!bSuccess) //If not success, break loop.
+          {
+               cout << "Cannot read a frame from video stream" << endl;
+               break;
+          }
 
-   Mat imgHSV;
+          Mat imgHSV;
 
-  cvtColor(imgOriginal, imgHSV, COLOR_BGR2HSV); //Convert the captured frame from BGR to HSV
- 
-  Mat imgThresholded;
+          cvtColor(imgOriginal, imgHSV, COLOR_BGR2HSV); //Convert the captured frame from BGR to HSV.
 
-  inRange(imgHSV, Scalar(iLowH, iLowS, iLowV), Scalar(iHighH, iHighS, iHighV), imgThresholded); //Threshold the image
-      
-  //morphological opening (removes small objects from the foreground)
-  erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) );
-  dilate( imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) ); 
+          Mat imgThresholded;
 
-  //morphological closing (removes small holes from the foreground)
-  dilate( imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) ); 
-  erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) );
+          inRange(imgHSV, Scalar(iLowH, iLowS, iLowV), Scalar(iHighH, iHighS, iHighV), imgThresholded); //Threshold the image.
 
-  //Calculate the moments of the thresholded image
-  Moments oMoments = moments(imgThresholded);
+          //Morphological opening (removes small objects from the foreground).
+          erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+          dilate(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 
-  double dM01 = oMoments.m01;
-  double dM10 = oMoments.m10;
-  double dArea = oMoments.m00;
+          //Morphological closing (removes small holes from the foreground).
+          dilate(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+          erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 
-  // if the area <= 10000, I consider that the there are no object in the image and it's because of the noise, the area is not zero 
-  if (dArea > 10000)
-  {
-   //calculate the position of the ball
-   double posX = dM10 / dArea;
-   double posY = dM01 / dArea;        
-   
-        
-  // Calculate the lenth of the cameras view on a surface depending on the cameras distance to the surface
-  double FOV = 78;
-  double distFromgroundCam = 0.35;
-  double halfFOV = degreesToRadians (FOV/2);
-  double B = M_PI-M_PI_2-halfFOV;
-  double a = (distFromgroundCam / sin(B))*sin(halfFOV);
-  double alpha = atan2(9,16);
-  double length = 2*cos(alpha)*a;
-  double width = 2*sin(alpha)*a;
+          //Calculate the moments of the thresholded image.
+          Moments oMoments = moments(imgThresholded);
 
-  point coordInPixel; //Use the coordinates from the camera, the current values are for testing only.
-  coordInPixel.x = posX; 
-  coordInPixel.y = posY;
-  // convert from length in pixels to length in meters
-  point coordInMeters = pixelsToMeters(coordInPixel,length);
-  coordInMeters.y = -coordInMeters.y; // convert from the cameras coordinate system with a reverted y-axis to the turtlebots normal coordinate system.
-  point camCenterToRobotCenter; // We find the vector from the middle of the robot to the middle of the camera. 
-  camCenterToRobotCenter.x = 0; 
-  camCenterToRobotCenter.y = -0.21; //this is a measured distance
-  point camToOrigo;
-  camToOrigo.x = 1.0/2.0*length;
-  camToOrigo.y = -1.0/2.0*width;
-   cout << "Dimensions: " << length<< " ; " <<  width << "\n";
+          double dM01 = oMoments.m01;
+          double dM10 = oMoments.m10;
+          double dArea = oMoments.m00;
 
-   cout << "camToOrigo: " << camToOrigo.x << " ; " <<  camToOrigo.y << "\n";
+          // If the area <= 10000, I consider that the there are no object in the image and it's because of the noise, the area is not zero.
+          if (dArea > 10000)
+          {
+               // Calculate (estimation if only some of the object is in shot) the center position of the found object.
+               double posX = dM10 / dArea;
+               double posY = dM01 / dArea;
 
-  point camOrigoToRobot;
-  camOrigoToRobot.x = camCenterToRobotCenter.x + camToOrigo.x;
-  camOrigoToRobot.y = camCenterToRobotCenter.y + camToOrigo.y;
-  cout << "camOrigoToRobot: " << camOrigoToRobot.x << " ; " <<  camOrigoToRobot.y << "\n";
+#pragma region ConversionOfCamPoint
+               // Changable variables: Diagonal FOV of the camera, and the camera distance to the ground.
+               double FOV = 78;
+               double distFromGroundCam = 0.35;
 
-  point coordInMetersToRobotOrigo;
-  coordInMetersToRobotOrigo.x = coordInMeters.x - camOrigoToRobot.x;
-  coordInMetersToRobotOrigo.y = coordInMeters.y - camOrigoToRobot.y;
-  cout << "coordInMetersToRobotOrigo: " << coordInMetersToRobotOrigo.x << " ; " <<  coordInMetersToRobotOrigo.y << "\n";
+               //The following determines the measurements (length and width) of the area that the camera projects.
+               double halfFOV = degreesToRadians(FOV / 2);
+               double B = M_PI - M_PI_2 - halfFOV;
+               double a = (distFromGroundCam / sin(B)) * sin(halfFOV);
+               double alpha = atan2(9, 16);
 
-  point rotatedPoint = rotatePointByAngle( 0, coordInMetersToRobotOrigo);
-  cout << "RotatedPoint: " << rotatedPoint.x << " ; " <<  rotatedPoint.y << "\n";
+               double length = 2 * cos(alpha) * a;
+               double width = 2 * sin(alpha) * a;
+               cout << "Dimensions: " << length << " ; " << width << "\n";
 
-  point robotCoord;
-  robotCoord.x = cur_pose.x;
-  robotCoord.y = cur_pose.y;
-  point paperPoint;
-  paperPoint.x = 3 + rotatedPoint.x; //3 and 4 are test coordinates and should be changed to robotCoord, when used with the robot.
-  paperPoint.y = 4 + rotatedPoint.y;
-  cout << "Paperpoint: " << paperPoint.x << " ; " <<  paperPoint.y << "\n";
+               //The coordinates of the found point in pixels.
+               point coordInPixel; //Use the coordinates that will be published, the current values are for testing only.
+               coordInPixel.x = posX;
+               coordInPixel.y = posY;
 
-   
-  imshow("Thresholded Image", imgThresholded); //show the thresholded image
-  imshow("Original", imgOriginal); //show the original image
+               //Converts the point's coordinates from pixels to meters using the pixelsToMeters function.
+               point coordInMeters = pixelsToMeters(coordInPixel, length);
 
-        if (waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
-       {
-            cout << "esc key is pressed by user" << endl;
-            break; 
-       }
-   return 0;
+               //Since the camera determines the coordinates of the point using the y-axis going downwards. The y-axis is reverted by adding a negative sign.
+               coordInMeters.y = -coordInMeters.y;
+
+               // The vector from the middle of the camera to the center of the robot. Measured as difference in x and y respectively and is changable.
+               point camCenterToRobotCenter;
+               camCenterToRobotCenter.x = 0;
+               camCenterToRobotCenter.y = -0.21;
+
+               //The vector of the area projected by the camera from Origo to the center of the area/camera.
+               point camOrigoToCamCenter;
+               camOrigoToCamCenter.x = 1.0 / 2.0 * length;
+               camOrigoToCamCenter.y = -1.0 / 2.0 * width;
+               cout << "camOrigoToCamCenter: " << camOrigoToCamCenter.x << " ; " << camOrigoToCamCenter.y << "\n";
+
+               //The vector from the projected area's Origo to the center of the robot.
+               //This is done to shift the coodinate-system of the camera to a coodinate-system with Origo in the robot's centre.
+               point camOrigoToRobot;
+               camOrigoToRobot.x = camCenterToRobotCenter.x + camOrigoToCamCenter.x;
+               camOrigoToRobot.y = camCenterToRobotCenter.y + camOrigoToCamCenter.y;
+               cout << "camOrigoToRobot: " << camOrigoToRobot.x << " ; " << camOrigoToRobot.y << "\n";
+
+               //The vector of the found point from the robot centre (in meters).
+               point coordInMetersToRobotOrigo;
+               coordInMetersToRobotOrigo.x = coordInMeters.x - camOrigoToRobot.x;
+               coordInMetersToRobotOrigo.y = coordInMeters.y - camOrigoToRobot.y;
+               cout << "coordInMetersToRobotOrigo: " << coordInMetersToRobotOrigo.x << " ; " << coordInMetersToRobotOrigo.y << "\n";
+
+               //The found point is rotated to fit with the robots coodinate-system.
+               //It is then rotated with the current angle of the robot measured from the x-axis to determine the correct position of the point compared to the robot.
+               point rotatedPoint = rotatePointByAngle(0, coordInMetersToRobotOrigo);
+               cout << "RotatedPoint: " << rotatedPoint.x << " ; " << rotatedPoint.y << "\n";
+
+               //The coordinates of the found paper from the robots Origin point.
+               //Determined from the coordinates of the robot from its Origin + the vector from the robot centre to the found point.
+               point paperPoint;
+               paperPoint.x = cur_pose.x + rotatedPoint.x;
+               paperPoint.y = cur_pose.y + rotatedPoint.y;
+               cout << "Paperpoint: " << paperPoint.x << " ; " << paperPoint.y << "\n";
+#pragma endregion
+
+               imshow("Thresholded Image", imgThresholded); //Show the thresholded image.
+               imshow("Original", imgOriginal);             //Show the original image.
+
+               if (waitKey(30) == 27) //Wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop.
+               {
+                    cout << "esc key is pressed by user" << endl;
+                    break;
+               }
+          }
+     }
+     return 0;
 }
 
+//Everytime a message arrives, this function is called. It updates the robots coordinates and its orientation.
+void poseCallback(const turtlesim::Pose::ConstPtr &pose_message)
+{
+     cur_pose.x = pose_message->x;
+     cur_pose.y = pose_message->y;
+     cur_pose.theta = pose_message->theta;
+}
+
+//Converts degrees to radians.
 double degreesToRadians(double angleDegrees)
 {
-return angleDegrees*M_PI/180;
+     return angleDegrees * M_PI / 180;
 }
 
-point pixelsToMeters(point coordInPixels , double length )
+//Converts a pioint from pixels to meters, based on the ratio between side length and number of pixels.
+point pixelsToMeters(point coordInPixels, double length)
 {
      point coordInMeters;
-     coordInMeters.x = coordInPixels.x*(length/1920);
-     coordInMeters.y = coordInPixels.y*(length/1920);
+     coordInMeters.x = coordInPixels.x * (length / 1920);
+     coordInMeters.y = coordInPixels.y * (length / 1920);
      return coordInMeters;
 }
 
-void poseCallback(const turtlesim::Pose::ConstPtr& pose_message)
-{
-    
-
-    cur_pose.x = pose_message ->x;
-    cur_pose.y = pose_message ->y;
-    cur_pose.theta = pose_message -> theta;
-}
+//Rotates a vector by a given angle.
 point rotatePointByAngle(double angle, point coord)
 {
-    point rotatedPoint;
-    rotatedPoint.x = coord.x * cos(angle - M_PI_2) + coord.y * (-sin(angle- M_PI_2));
-    rotatedPoint.y = coord.x * sin(angle- M_PI_2) + coord.y * cos(angle- M_PI_2);
-    return rotatedPoint;
+     point rotatedPoint;
+     rotatedPoint.x = coord.x * cos(angle - M_PI_2) + coord.y * (-sin(angle - M_PI_2));
+     rotatedPoint.y = coord.x * sin(angle - M_PI_2) + coord.y * cos(angle - M_PI_2);
+     return rotatedPoint;
 }
