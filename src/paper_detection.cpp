@@ -3,11 +3,16 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 
+
 using namespace cv;
 using namespace std;
 
  int main( int argc, char** argv )
- {
+ {     
+
+     int contourColour[] = {0, 0, 255}; //colour R, G, B
+     int boundColour[] = {0, 255, 0}; //colour R, G, B
+
     VideoCapture cap(0); //capture the video from webcam
 
     if ( !cap.isOpened() )  // if not success, exit program
@@ -35,18 +40,7 @@ using namespace std;
  createTrackbar("HighS", "Control", &iHighS, 255);
 
  createTrackbar("LowV", "Control", &iLowV, 255);//Value (0 - 255)
- createTrackbar("HighV", "Control", &iHighV, 255);
-
- int iLastX = -1; 
- int iLastY = -1;
-
- //Capture a temporary image from the camera
- Mat imgTmp;
- cap.read(imgTmp); 
-
- //Create a black image with the size as the camera output
- Mat imgLines = Mat::zeros( imgTmp.size(), CV_8UC3 );;
- 
+ createTrackbar("HighV", "Control", &iHighV, 255); 
 
     while (true)
     {
@@ -78,34 +72,37 @@ using namespace std;
   dilate( imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) ); 
   erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)) );
 
-  //Calculate the moments of the thresholded image
-  Moments oMoments = moments(imgThresholded);
+     
+     vector<vector<Point>> contours;
+  
+     findContours(imgThresholded, contours, RETR_TREE, CHAIN_APPROX_SIMPLE, Point(0,0));
 
-  double dM01 = oMoments.m01;
-  double dM10 = oMoments.m10;
-  double dArea = oMoments.m00;
+     vector<Rect> boundbox(contours.size());
 
-  // if the area <= 10000, I consider that the there are no object in the image and it's because of the noise, the area is not zero 
-  if (dArea > 10000)
-  {
-   //calculate the position of the ball
-   int posX = dM10 / dArea;
-   int posY = dM01 / dArea;        
-        
-   if (iLastX >= 0 && iLastY >= 0 && posX >= 0 && posY >= 0)
-   {
-    //Draw a red line from the previous point to the current point
-    line(imgLines, Point(posX, posY), Point(iLastX, iLastY), Scalar(0,0,255), 2);
-   }
+ 
+     for(size_t i = 0; i < contours.size(); i++){
+          approxPolyDP( Mat(contours[i]), contours[i], 3, true);
+          boundbox[i] = boundingRect(contours[i]);
+     }
 
-   iLastX = posX;
-   iLastY = posY;
-  }
+     for( size_t i = 0; i < contours.size(); i++ ){
+          rectangle( imgOriginal, boundbox[i].tl(), boundbox[i].br(), (boundColour[0], boundColour[1], boundColour[2]), 2, 8, 0 );    
+     }     
+     
+     drawContours(imgOriginal, contours, -1, (contourColour[0], contourColour[1], contourColour[2]), 3);
+     imshow("Thresholded Image", imgThresholded); //show the thresholded image
+     imshow("Original", imgOriginal); //show the original image
 
-  imshow("Thresholded Image", imgThresholded); //show the thresholded image
+     vector<Point> rectCenter; //current boundingbox center coordinates
 
-  imgOriginal = imgOriginal + imgLines;
-  imshow("Original", imgOriginal); //show the original image
+     vector<Point> rectPos; //position of boundingboxes from last frame
+     vector<Point> rectSurface; //surface area of boundingbox last frame
+
+     // for( size_t i = 0; i == boundbox.size(); i++ ){
+
+     // }
+
+
 
         if (waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
        {

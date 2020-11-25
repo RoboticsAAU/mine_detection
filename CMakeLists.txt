@@ -155,13 +155,11 @@ add_dependencies(paper_detection ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EX
 target_link_libraries(detection
   ${catkin_LIBRARIES}
   ${OpenCV_LIBS}
-  ${usb_cam_LIBS}
 )
 
 target_link_libraries(paper_detection
   ${catkin_LIBRARIES}
   ${OpenCV_LIBS}
-  ${usb_cam_LIBS}
 )
 
 #############
