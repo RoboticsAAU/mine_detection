@@ -1,14 +1,44 @@
-
+#include "ros/ros.h"
 #include <iostream>
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
+#include <math.h>
+#include <turtlesim/Pose.h>
 
 using namespace cv;
 using namespace std;
 
+ros::Publisher point_pub;
+ros::Subscriber sub_pose;
+
+class point 
+{
+     public:
+     double x;
+     double y;
+};
+void poseCallback(const turtlesim::Pose::ConstPtr& pose_message);
+double degreesToRadians (double angleDegrees)
+{
+return angleDegrees*M_PI/180;
+}
+
+point pixelsToMeters ( point coordInPixels , double length )
+{
+     point coordInMeters;
+     coordInMeters.x = coordInPixels.x*(length/1920);
+     coordInMeters.y = coordInPixels.y*(length/1920);
+     return coordInMeters;
+}
+
+turtlesim::Pose cur_pose;
+
  int main( int argc, char** argv )
  {
-    VideoCapture cap(0); //capture the video from webcam
+      ros::init(argc,argv, "mine_detector");
+      ros::NodeHandle n;
+      sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
+  /*  VideoCapture cap(0); //capture the video from webcam
 
     if ( !cap.isOpened() )  // if not success, exit program
     {
@@ -89,19 +119,43 @@ using namespace std;
   if (dArea > 10000)
   {
    //calculate the position of the ball
-   int posX = dM10 / dArea;
-   int posY = dM01 / dArea;        
+   double posX = dM10 / dArea;
+   double posY = dM01 / dArea;        
+   */
         
-   if (iLastX >= 0 && iLastY >= 0 && posX >= 0 && posY >= 0)
-   {
-    //Draw a red line from the previous point to the current point
-    line(imgLines, Point(posX, posY), Point(iLastX, iLastY), Scalar(0,0,255), 2);
-   }
+  // Calculate the lenth of the cameras view on a surface depending on the cameras distance to the surface
+  double FOV = 78;
+  double distFromgroundCam = 0.35;
+  double halfFOV = degreesToRadians (FOV/2);
+  double B = M_PI-M_PI_2-halfFOV;
+  double a = (distFromgroundCam / sin(B))*sin(halfFOV);
+  double alpha = atan2(9,16);
+  double length = 2*cos(alpha)*a;
+  double width = 2*sin(alpha)*a;
 
-   iLastX = posX;
-   iLastY = posY;
-  }
+  point coordInPixel; //Use the coordinates from the camera, the current values are for testing only.
+  coordInPixel.x = 450; 
+  coordInPixel.y = 543;
+  // convert from length in pixels to length in meters
+  point coordInMeters = pixelsToMeters(coordInPixel,length);
+  cout << length << " : " << width << "\n";
+  cout << coordInMeters.x << " ; " << coordInMeters.y;
+  coordInMeters.y = -coordInMeters.y; // convert from the cameras coordinate system with a reverted y-axis to the turtlebots normal coordinate system.
+  point robotCenterToCam; // We find the vector from the middle of the robot to the middle of the camera. 
+  robotCenterToCam.x = 0; 
+  robotCenterToCam.y = 0.21;
+  point camToOrigo;
+  camToOrigo.x = -1/2*length;
+  camToOrigo.y = 1/2*width;
+  point robotToOrigo;
+  robotToOrigo.x = robotCenterToCam.x + camToOrigo.x;
+  robotToOrigo.y = robotCenterToCam.y + camToOrigo.y;
+  point coordInMetersToRobotOrigo;
+  coordInMetersToRobotOrigo.x = coordInMeters.x - robotToOrigo.x;
+  coordInMetersToRobotOrigo.y = coordInMeters.y - robotToOrigo.y;
 
+  
+   /*
   imshow("Thresholded Image", imgThresholded); //show the thresholded image
 
   imgOriginal = imgOriginal + imgLines;
@@ -113,8 +167,16 @@ using namespace std;
             break; 
        }
     }
-
+     */
    return 0;
+}
+void poseCallback(const turtlesim::Pose::ConstPtr& pose_message)
+{
+    
+
+    cur_pose.x = pose_message ->x;
+    cur_pose.y = pose_message ->y;
+    cur_pose.theta = pose_message -> theta;
 }
 
 // #include <iostream>
