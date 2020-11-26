@@ -134,6 +134,7 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(path_basis src/path_basis.cpp src/move.cpp)
 add_executable(gazebo_odom src/gazebo_odom.cpp)
+add_executable(laser src/laser.cpp)
 
 
 ## Rename C++ executable without prefix
@@ -146,6 +147,7 @@ add_executable(gazebo_odom src/gazebo_odom.cpp)
 ## same as for the library above
 add_dependencies(path_basis ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(gazebo_odom ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(laser ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(path_basis
@@ -154,7 +156,9 @@ target_link_libraries(path_basis
 target_link_libraries(gazebo_odom
   ${catkin_LIBRARIES}
 )
-
+target_link_libraries(laser
+${catkin_LIBRARIES}
+)
 #############
 ## Install ##
 #############
