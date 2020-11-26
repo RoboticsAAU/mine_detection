@@ -2,6 +2,6 @@
 <include file="$(find turtlebot_gazebo)/launch/turtlebot_world.launch"/>
 <include file="$(find turtlebot_gazebo)/launch/gmapping_demo.launch"/>
 <include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml"/>
+<include file="$(find turtlebot_rviz_launchers)/launch/view_robot.launch"/>
 <node name="path_basis_node" pkg="mine_detection" type="path_basis"/>
-<node name="$(anon rviz)" pkg="rviz" type="rviz"/>
 </launch>
