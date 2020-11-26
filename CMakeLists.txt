@@ -52,7 +52,7 @@ add_message_files(
  FILES
  point_coords.msg
 #   Message2.msg
-# )
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(

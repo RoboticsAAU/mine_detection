@@ -32,17 +32,17 @@ int main(int argc, char **argv)
      int boundColour[] = {0, 0, 255};
      int contourColour[] = {0, 255, 0};
 
-     ros::init(argc, argv, "mine_detector");
-     ros::NodeHandle n;
+     // ros::init(argc, argv, "mine_detector");
+     // ros::NodeHandle n;
 
-     sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
-     point_pub = n.advertise<point_coords.msg>("/paper_pose", 10);
+     //sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
+     //point_pub = n.advertise<point_coords.msg>("/paper_pose", 10);
 
      VideoCapture cap(0); //Capture the video from webcam.
 
      if (!cap.isOpened()) //If not success, exit program.
      {
-          cout << "Cannot open the web cam" << endl;
+          std::cout << "Cannot open the web cam" << endl;
           return -1;
      }
 
@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 
           if (!bSuccess) //If not success, break loop.
           {
-               cout << "Cannot read a frame from video stream" << endl;
+               std::cout << "Cannot read a frame from video stream" << endl;
                break;
           }
 
@@ -118,37 +118,42 @@ int main(int argc, char **argv)
 
           vector<Point> rectCenter; //current boundingbox center coordinates
 
-     vector<int> rectSurface; //surface area of boundingbox last frame
-     vector<int> lastRectSurface; //surface area of boundingbox last frame
+          vector<int> rectSurface;     //surface area of boundingbox last frame
+          vector<int> lastRectSurface; //surface area of boundingbox last frame
 
-     for( size_t i = 0; i == boundbox.size(); i++ ){//Calculate surface area of bounding boxes currently on the screen
-          rectSurface[i] = boundbox[i].width * boundbox[i].height;
-          if (rectSurface[i] < lastRectSurface[i]){ //if bounding rectangle is smaller than last frame save coordinates
-               rectCenter[i] = {boundbox[i].x, boundbox[i].y};
+          for (size_t i = 0; i == boundbox.size(); i++)
+          { //Save bounding rectangle surface area
+               lastRectSurface[i] = rectSurface[i];
           }
-     }
-     
-     for( size_t i = 0; i == boundbox.size(); i++ ){//Save bounding rectangle surface area
-          lastRectSurface[i] = rectSurface[i];
-     }
 
-          for (int i = 0; i < rectCenter.size(); i++)
+          for (size_t i = 0; i == boundbox.size(); i++)
+          { //Calculate surface area of bounding boxes currently on the screen
+               rectSurface[i] = boundbox[i].width * boundbox[i].height;
+               if (rectSurface[i] < lastRectSurface[i])
+               { //if bounding rectangle is smaller than last frame save coordinates
+                    rectCenter[i] = {boundbox[i].x, boundbox[i].y};
+               }
+          }
+
+          for (size_t i = 0; i == rectCenter.size(); i++)
           {
                point pointCent;
-               pointCent.x = rectCenter[i].x;
-               pointCent.y = rectCenter[i].y;
+               pointCent.x = double(rectCenter.at(i).x);
+               pointCent.y = double(rectCenter.at(i).y);
 
-               point pointCentConverted = convertCoordinatesOfPoint(pointCent);
-               point_pub = pointCentConverted.x;
+               std::cout << rectCenter.at(i).x << " : " << rectCenter.at(i).y;
+               std::cout << pointCent.x << " : " << pointCent.y;
+               std::cout << "yess";
+               //point pointCentConverted = convertCoordinatesOfPoint(pointCent);
+               //point_pub = pointCentConverted.x;
           }
 
-        if (waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
-       {
-          cout << "esc key is pressed by user" << endl;
-          break; 
-       }
-    }
-
+          if (waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
+          {
+               std::cout << "esc key is pressed by user" << endl;
+               break;
+          }
+     }
      return 0;
 }
 
@@ -198,7 +203,7 @@ point convertCoordinatesOfPoint(point coord)
 
      double length = 2 * cos(alpha) * a;
      double width = 2 * sin(alpha) * a;
-     cout << "Dimensions: " << length << " ; " << width << "\n";
+     //std::cout << "Dimensions: " << length << " ; " << width << "\n";
 
      //The coordinates of the found point in pixels.
      point coordInPixel; //Use the coordinates that will be published, the current values are for testing only.
@@ -220,31 +225,31 @@ point convertCoordinatesOfPoint(point coord)
      point camOrigoToCamCenter;
      camOrigoToCamCenter.x = 1.0 / 2.0 * length;
      camOrigoToCamCenter.y = -1.0 / 2.0 * width;
-     cout << "camOrigoToCamCenter: " << camOrigoToCamCenter.x << " ; " << camOrigoToCamCenter.y << "\n";
+     //std::cout << "camOrigoToCamCenter: " << camOrigoToCamCenter.x << " ; " << camOrigoToCamCenter.y << "\n";
 
      //The vector from the projected area's Origo to the center of the robot.
      //This is done to shift the coodinate-system of the camera to a coodinate-system with Origo in the robot's centre.
      point camOrigoToRobot;
      camOrigoToRobot.x = camCenterToRobotCenter.x + camOrigoToCamCenter.x;
      camOrigoToRobot.y = camCenterToRobotCenter.y + camOrigoToCamCenter.y;
-     cout << "camOrigoToRobot: " << camOrigoToRobot.x << " ; " << camOrigoToRobot.y << "\n";
+     //std::cout << "camOrigoToRobot: " << camOrigoToRobot.x << " ; " << camOrigoToRobot.y << "\n";
 
      //The vector of the found point from the robot centre (in meters).
      point coordInMetersToRobotOrigo;
      coordInMetersToRobotOrigo.x = coordInMeters.x - camOrigoToRobot.x;
      coordInMetersToRobotOrigo.y = coordInMeters.y - camOrigoToRobot.y;
-     cout << "coordInMetersToRobotOrigo: " << coordInMetersToRobotOrigo.x << " ; " << coordInMetersToRobotOrigo.y << "\n";
+     //std::cout << "coordInMetersToRobotOrigo: " << coordInMetersToRobotOrigo.x << " ; " << coordInMetersToRobotOrigo.y << "\n";
 
      //The found point is rotated to fit with the robots coodinate-system.
      //It is then rotated with the current angle of the robot measured from the x-axis to determine the correct position of the point compared to the robot.
      point rotatedPoint = rotatePointByAngle(0, coordInMetersToRobotOrigo);
-     cout << "RotatedPoint: " << rotatedPoint.x << " ; " << rotatedPoint.y << "\n";
+     std::cout << "RotatedPoint: " << rotatedPoint.x << " ; " << rotatedPoint.y << "\n";
 
      //The coordinates of the found paper from the robots Origin point.
      //Determined from the coordinates of the robot from its Origin + the vector from the robot centre to the found point.
      point paperPoint;
      paperPoint.x = cur_pose.x + rotatedPoint.x;
      paperPoint.y = cur_pose.y + rotatedPoint.y;
-     cout << "Paperpoint: " << paperPoint.x << " ; " << paperPoint.y << "\n";
+     std::cout << "Paperpoint: " << paperPoint.x << " ; " << paperPoint.y << "\n";
      return paperPoint;
 }
