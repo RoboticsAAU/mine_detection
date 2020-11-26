@@ -13,6 +13,7 @@ struct Point
 };
 
 std::vector<Point> points;
+Point laser_offset = {0.08, 0.025};
 
 ros::Subscriber laser_sub;
 ros::Publisher laser_pub;
