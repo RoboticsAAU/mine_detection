@@ -120,34 +120,43 @@ int main(int argc, char **argv)
 
           vector<int> rectSurface;     //surface area of boundingbox last frame
           vector<int> lastRectSurface; //surface area of boundingbox last frame
-
-          for (size_t i = 0; i == boundbox.size(); i++)
-          { //Save bounding rectangle surface area
-               lastRectSurface[i] = rectSurface[i];
-          }
-
-          for (size_t i = 0; i == boundbox.size(); i++)
-          { //Calculate surface area of bounding boxes currently on the screen
-               rectSurface[i] = boundbox[i].width * boundbox[i].height;
-               if (rectSurface[i] < lastRectSurface[i])
-               { //if bounding rectangle is smaller than last frame save coordinates
-                    rectCenter[i] = {boundbox[i].x, boundbox[i].y};
+          if ( boundbox.size() > 0) 
+          {
+               int j = boundbox.size();
+               cout << "size" << boundbox.size();
+          for (int i = 0; i < j; i++ )
+               {
+               //for (size_t i = 0; i == boundbox.size(); i++)
+               //Calculate surface area of bounding boxes currently on the screen
+                    std::cout << "b" << boundbox.size();
+                    rectSurface[i] = boundbox[i].width * boundbox[i].height;
+                    std::cout << " a " << rectSurface[i];
+                    if (rectSurface[i] < lastRectSurface[i])
+                    { //if bounding rectangle is smaller than last frame save coordinates
+                    std::cout << "mere mælk";
+                         rectCenter[i] = {boundbox[i].x, boundbox[i].y};
+                         std::cout << "hjælp \n" << rectCenter.size();
+                    }
+                    
+                    lastRectSurface[i] = rectSurface[i];
                }
           }
+               
+               if (rectCenter.size() != 0) 
+               {
+                         for (size_t i = 0; i == rectCenter.size(); i++)
+                         {
+                         point pointCent;
+                         pointCent.x = double(rectCenter.at(i).x);
+                         pointCent.y = double(rectCenter.at(i).y);
 
-          for (size_t i = 0; i == rectCenter.size(); i++)
-          {
-               point pointCent;
-               pointCent.x = double(rectCenter.at(i).x);
-               pointCent.y = double(rectCenter.at(i).y);
-
-               std::cout << rectCenter.at(i).x << " : " << rectCenter.at(i).y;
-               std::cout << pointCent.x << " : " << pointCent.y;
-               std::cout << "yess";
-               //point pointCentConverted = convertCoordinatesOfPoint(pointCent);
-               //point_pub = pointCentConverted.x;
-          }
-
+                         std::cout << rectCenter.at(i).x << " : " << rectCenter.at(i).y;
+                         std::cout << pointCent.x << " : " << pointCent.y;
+                         std::cout << "yess";
+                         //point pointCentConverted = convertCoordinatesOfPoint(pointCent);
+                         //point_pub = pointCentConverted.x;
+                         }
+               }    
           if (waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
           {
                std::cout << "esc key is pressed by user" << endl;
