@@ -32,17 +32,17 @@ int main(int argc, char **argv)
      int boundColour[] = {0, 0, 255};
      int contourColour[] = {0, 255, 0};
 
-     // int resx = 1920;
-     // int resy = 1080;
+     int resx = 1920;
+     int resy = 1080;
 
-     // int minbox = 1;
-     // int maxbox = 10;
+     int minbox = 1;
+     int maxbox = 10;
 
-     // ros::init(argc, argv, "mine_detector");
-     // ros::NodeHandle n;
+     ros::init(argc, argv, "mine_detector");
+     ros::NodeHandle n;
 
-     //sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
-     //point_pub = n.advertise<point_coords.msg>("/paper_pose", 10);
+     // sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
+     // point_pub = n.advertise<point_coords.msg>("/paper_pose", 10);
 
      VideoCapture cap(0); //Capture the video from webcam.
 
@@ -54,13 +54,13 @@ int main(int argc, char **argv)
 
      namedWindow("Control", CV_WINDOW_AUTOSIZE); //Create a window called "Control".
 
-     int iLowH = 125;
+     int iLowH = 0;
      int iHighH = 179;
 
-     int iLowS = 140;
+     int iLowS = 150;
      int iHighS = 255;
 
-     int iLowV = 140;
+     int iLowV = 150;
      int iHighV = 255;
 
      //Create trackbars in "Control" window.
@@ -129,44 +129,47 @@ int main(int argc, char **argv)
 
           imshow("Thresholded Image", imgThresholded); //show the thresholded image
           imshow("Original", imgOriginal);             //show the original image
-          
-
-
+               
                vector<Point> rectCenter; //current boundingbox center coordinates
+               
+               vector<double> rectSurface(boundbox.size());     //surface area of boundingbox last frame
+               vector<double> lastRectSurface(boundbox.size()); //surface area of boundingbox last frame
+               fill(lastRectSurface.begin(), lastRectSurface.end(), 0);
 
-               vector<int> rectSurface;     //surface area of boundingbox last frame
-               vector<int> lastRectSurface; //surface area of boundingbox last frame
 
-
-               for (size_t i = 0; i < boundbox.size(); i++ ) {
-                    std::cout << "hjælp \n" << rectCenter.size();
+               for (size_t i = 0; i < boundbox.size(); i++ ) { 
+                    cout << "bounding amount = " << boundbox.size() << endl;                    
+                    cout << "width = " << boundbox[i].width << endl; 
+                    cout << "heigth = " << boundbox[i].height << endl;                                        
+                    
                     rectSurface[i] = boundbox[i].width * boundbox[i].height;
-                    std::cout << "hjælp igen \n" << rectCenter.size();
-                    if(!lastRectSurface.empty()){
-                         if (rectSurface[i] < lastRectSurface[i]) { //if bounding rectangle is smaller than last frame save coordinates
-                              //std::cout << "hjælp \n" << rectCenter.size();
-                              rectCenter[i] = {boundbox[i].x, boundbox[i].y};                              
-                         }
+
+                    if (rectSurface[i] < lastRectSurface[i]) { //if bounding rectangle is smaller than last frame save coordinated of bounding rectangle
+                         rectCenter[i] = {boundbox[i].x, boundbox[i].y};
+                         cout << "center = " << rectCenter[i] << endl;
                     }
 
                     lastRectSurface[i] = rectSurface[i];
-               }               
-                    
-                    // if (rectCenter.size() != 0) 
-                    // {
-                    //           for (size_t i = 0; i == rectCenter.size(); i++)
-                    //           {
-                    //           point pointCent;
-                    //           pointCent.x = double(rectCenter.at(i).x);
-                    //           pointCent.y = double(rectCenter.at(i).y);
 
-                    //           std::cout << rectCenter.at(i).x << " : " << rectCenter.at(i).y;
-                    //           std::cout << pointCent.x << " : " << pointCent.y;
-                    //           std::cout << "yess";
-                    //           //point pointCentConverted = convertCoordinatesOfPoint(pointCent);
-                    //           //point_pub = pointCentConverted.x;
-                    //           }
-                    // } 
+                    cout << "surface = " << rectSurface[i] << endl;
+                    cout << "last surface = " << lastRectSurface[i] << endl;
+               }
+
+               if (rectCenter.size() != 0) 
+               {
+                         for (size_t i = 0; i == rectCenter.size(); i++)
+                         {
+                         point pointCent;
+                         pointCent.x = double(rectCenter.at(i).x);
+                         pointCent.y = double(rectCenter.at(i).y);
+
+                         std::cout << rectCenter.at(i).x << " : " << rectCenter.at(i).y;
+                         std::cout << pointCent.x << " : " << pointCent.y;
+                         std::cout << "yess";
+                         //point pointCentConverted = convertCoordinatesOfPoint(pointCent);
+                         //point_pub = pointCentConverted.x;
+                         }
+               } 
 
           if (waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
           {
