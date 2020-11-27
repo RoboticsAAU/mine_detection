@@ -29,14 +29,13 @@ turtlesim::Pose cur_pose;
 int main(int argc, char **argv)
 {
 
+     vector<int> lastRectSurface; //surface area of boundingbox last frame
+
      int boundColour[] = {0, 0, 255};
      int contourColour[] = {0, 255, 0};
 
-     int resx = 1920;
-     int resy = 1080;
-
-     int minbox = 1;
-     int maxbox = 10;
+     int surflimit = 250;
+     int surfacedif;
 
      ros::init(argc, argv, "mine_detector");
      ros::NodeHandle n;
@@ -73,9 +72,9 @@ int main(int argc, char **argv)
      createTrackbar("LowV", "Control", &iLowV, 255); //Value (0 - 255)
      createTrackbar("HighV", "Control", &iHighV, 255);
 
-     
+     int check = 0; //used for defining how many frames to skip for defining last rectangle surface
 
-     while (true)
+     while (ros::ok())
      {
 
           
@@ -83,6 +82,9 @@ int main(int argc, char **argv)
           Mat imgOriginal;
 
           bool bSuccess = cap.read(imgOriginal); //Read a new frame from video.
+          
+          check++; //add 1 to check 
+          cout << "Itteration----------------------------------------------------------------------------------------" << check << endl;
 
           if (!bSuccess) //If not success, break loop.
           {
@@ -130,29 +132,32 @@ int main(int argc, char **argv)
           imshow("Thresholded Image", imgThresholded); //show the thresholded image
           imshow("Original", imgOriginal);             //show the original image
                
-               vector<Point> rectCenter; //current boundingbox center coordinates
+               vector<Point> rectCenter(boundbox.size()); //current boundingbox center coordinates
                
-               vector<double> rectSurface(boundbox.size());     //surface area of boundingbox last frame
-               vector<double> lastRectSurface(boundbox.size()); //surface area of boundingbox last frame
-               fill(lastRectSurface.begin(), lastRectSurface.end(), 0);
+               vector<int> rectSurface(boundbox.size());     //surface area of boundingbox last frame
+               lastRectSurface.resize(boundbox.size()); //surface area of boundingbox last frame
 
 
                for (size_t i = 0; i < boundbox.size(); i++ ) { 
-                    cout << "bounding amount = " << boundbox.size() << endl;                    
-                    cout << "width = " << boundbox[i].width << endl; 
-                    cout << "heigth = " << boundbox[i].height << endl;                                        
+                    // cout << "bounding amount = " << boundbox.size() << endl;                    
+                    // cout << "width = " << boundbox[i].width << endl; 
+                    // cout << "heigth = " << boundbox[i].height << endl;                                        
                     
                     rectSurface[i] = boundbox[i].width * boundbox[i].height;
 
-                    if (rectSurface[i] < lastRectSurface[i]) { //if bounding rectangle is smaller than last frame save coordinated of bounding rectangle
-                         rectCenter[i] = {boundbox[i].x, boundbox[i].y};
-                         cout << "center = " << rectCenter[i] << endl;
-                    }
-
-                    lastRectSurface[i] = rectSurface[i];
+                    surfacedif = lastRectSurface[i] - rectSurface[i];
 
                     cout << "surface = " << rectSurface[i] << endl;
                     cout << "last surface = " << lastRectSurface[i] << endl;
+                    cout << "surface dif = " << surfacedif << endl;
+                    cout << "surface limit = " << surflimit << endl;
+
+                    if (surfacedif > surflimit) { //if bounding rectangle is smaller than last frame save coordinated of bounding rectangle
+                         rectCenter[i] = {boundbox[i].x + (boundbox[i].width/2), boundbox[i].x + (boundbox[i].height/2)};
+                         cout << "center = " << rectCenter[i] << endl;
+                    }                    
+                    lastRectSurface[i] = rectSurface[i];
+                    
                }
 
                if (rectCenter.size() != 0) 
@@ -176,6 +181,7 @@ int main(int argc, char **argv)
                std::cout << "esc key is pressed by user" << endl;
                break;
           }
+
      }
      return 0;
 }
