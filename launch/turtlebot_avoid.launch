@@ -1,0 +1,6 @@
+<launch>
+<include file="$(find turtlebot_gazebo)/launch/turtlebot_world.launch"/>
+<include file="$(find turtlebot_navigation)/launch/gmapping_demo.launch"/>
+<include file="$(find turtlebot_rviz_launchers)/launch/view_robot.launch"/>
+<node name="path_basis_node" pkg="mine_detection" type="path_basis"/>
+</launch>
