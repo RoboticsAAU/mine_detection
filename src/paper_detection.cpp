@@ -5,10 +5,12 @@
 #include <math.h>
 #include <turtlesim/Pose.h>
 #include "geometry_msgs/Point.h"
+#include <nav_msgs/Odometry.h>
 using namespace std;
 
 ros::Publisher point_pub;
 ros::Subscriber sub_pose;
+turtlesim::Pose cur_pose;
 
 class point
 {
@@ -17,13 +19,14 @@ public:
      double y;
 };
 
+double getTheta(double angle);
 void poseCallback(const turtlesim::Pose::ConstPtr &pose_message);
 double degreesToRadians(double angleDegrees);
 point pixelsToMeters(point coordInPixels, double length);
 point rotatePointByAngle(double angle, point coord);
 point convertCoordinatesOfPoint(point Coord);
 
-turtlesim::Pose cur_pose;
+
 
 int main(int argc, char **argv)
 {
@@ -36,9 +39,9 @@ int main(int argc, char **argv)
      int surflimit = 50;
      int surfacedif;
 
-     ros::init(argc, argv, "mine_detector");
+     ros::init(argc, argv, "paper_detector");
      ros::NodeHandle n;
-     point_pub = n.advertise<geometry_msgs::Point>("/mine/pose", 10);
+     point_pub = n.advertise<geometry_msgs::Point>("/paper/pose", 10);
      sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
 
      cv::VideoCapture cap(1); //Capture the video from webcam.
@@ -201,6 +204,14 @@ void poseCallback(const turtlesim::Pose::ConstPtr &pose_message)
      cur_pose.theta = pose_message->theta;
 }
 
+double getTheta(double angle)
+{
+    //If theta is negative it is converted to the corresponding positive angle (Theta becomes negative when the turtle rotates clockwise).
+    double theta = angle < 0 ? angle + 2 * M_PI : angle;
+    //cout << "Got theta: " << theta << endl;
+    return theta;
+}
+
 //Converts degrees to radians.
 double degreesToRadians(double angleDegrees)
 {
@@ -278,7 +289,7 @@ point convertCoordinatesOfPoint(point Coord)
 
      //The found point is rotated to fit with the robots coodinate-system.
      //It is then rotated with the current angle of the robot measured from the x-axis to determine the correct position of the point compared to the robot.
-     point rotatedPoint = rotatePointByAngle(cur_pose.theta, coordInMetersToRobotOrigo);
+     point rotatedPoint = rotatePointByAngle(getTheta(cur_pose.theta), coordInMetersToRobotOrigo);
      //std::cout << "RotatedPoint: " << rotatedPoint.x << " ; " << rotatedPoint.y << "\n";
 
      //The coordinates of the found paper from the robots Origin point.
