@@ -130,117 +130,78 @@ int main(int argc, char *argv[])
     ros::init(argc, argv, "mine_detection_path_planning");
     ros::NodeHandle n;
 
-    double speed, angular_speed;
-    double distance, angle;
-    bool isForward, clockwise;
 
     reset_pub = n.advertise<std_msgs::Empty>("/mobile_base/commands/reset_odometry", 10);
     vel_pub = n.advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/navi", 10);
     sub_pose = n.subscribe("/odom", 1000, &poseCallback);
-    points_pub = n.advertise<visualization_msgs::Marker>("/visualization_marker", 1);
+    points_pub = n.advertise<visualization_msgs::Marker>("/visualization_marker", 100);
 
-    std::cout << "Resetting odometry..." << std::endl;
+    ROS_INFO("Resetting odometry...");
     while (reset_pub.getNumSubscribers() == 0)
     {
         ros::spinOnce();
     }
 
+    //publish empty string to reset odometry.
     std_msgs::Empty e;
     reset_pub.publish(e);
-    std::cout << "Done" << std::endl;
+    ROS_INFO("Reset succesfully");
 
     ros::Rate loop_rate(10);
 
     Point goal_pose;
 
-    std::cin.get();
-
-    //create instance of the Move class.
-    //Move move_instance;
-
-    //create a pointer to the publisher, which holds the memory address of the pointer.
-    //ros::Publisher* vel_pub_ptr = &vel_pub;
-
-    //call the move function, and pass the pointer in as an argument.
-    //move_instance.move(2.0,2.0,true,vel_pub_ptr);
-
+    //create instance of points_list.
     points_List points_instance;
 
+    //create a vector of points.
     std::vector<Points_gen::Point> vec;
+
+    //retrieve points from pointsgen.cpp file.
     vec = points_instance.gen_Point_list();
 
-    points_instance.rvizPoints(points_pub, vec);
-    for (Point p : vec)
-    {
-        if (p.stop)
-            std::cout << "stopping at: " << p.x << "," << p.y << std::endl;
+    //check if points pub has subscribers.
+    if(points_pub.getNumSubscribers() != 0){
+        //publish points to rviz.
+        points_instance.rvizPoints(points_pub, vec);
     }
-    std::cin.get();
+    else{
+        ROS_WARN("Could not connect to rviz...");
+    }   
 
-    for (int i = 0; i < vec.size() - 1; i++)
-    {
-        Point p = vec.at(i);
+    //process callback to ensure connections are established. 
+    ros::spinOnce();
 
-        std::cout << "moving..." << std::endl;
-        std::cout << "Going to: " << goal_pose.x << " , " << goal_pose.y << endl;
-
-        rotate(p);
-        if (p.stop)
+    //check if vel_pub has subscribers.
+    if(vel_pub.getNumSubscribers() != 0){
+        //loop through the vector.
+        for (int i = 0; i < vec.size(); i++)
         {
-            move2goal(p, p);
-        }
-        else
-        {
-            int temp = ++i;
+            //create a point from each element.
+            Point p = vec.at(i);
+
+            //temp is used to count until a stop points is reached.
+            int temp = i;
+            //if at stop: rotate.
+            if(vec.at(temp).stop || vec.at(temp -1).stop){
+                rotate(p);
+            }
+            //count untill the next stop point.
             while (!vec.at(temp).stop)
             {
                 temp++;
             }
+            //move to the goal, using the next point p, as angular vel,
+            //and temp, as the linear vel guide.
             move2goal(p, vec.at(temp));
+            
         }
-
-        //std::cin.get();
+        std::cout << "Done";
     }
-    std::cout << "Done";
-
-    // The while loop fixes a bug where the turtle's coordinates are wrong when it spawns, by waiting for the turle's position to be updated.
-    // The turtle thinks it spawns at (0 ; 0), but it actually spawns at around (5,5 ; 5,5))
-    // while (cur_pose.x == 0)
-    // {
-    //     ros::spinOnce();
-    // }
-    /*
-    // The for loop as a whole is what makes the turtle move to the correct places in the correct order, thus making the boustrophedon decomposition.
-    // The outmost for loop is the overall amount of straight lines laterally (It does 10 lines).
-    for (int i = 1; i < 11; i++)
-    {
-        // When the x-coordinate is odd, the turtle moves upwards (increase in y-values).
-        if (i % 2 == 1)
-        {
-            for (int j = 1; j < 11; j++)
-            {
-                std::cout << "Going to: " << goal_pose.x << " , " << goal_pose.y << endl;
-                goal_pose.x = i;
-                goal_pose.y = j;
-                rotate(goal_pose);
-                move2goal(goal_pose);
-            }
-        }
-        // When the x-coordinate is even, the turtle moves downwards (decrease in y-values).
-        else
-        {
-            for (int j = 10; j > 0; j--)
-            {
-                std::cout << "Going to: " << i << " , " << j << endl;
-                goal_pose.x = i;
-                goal_pose.y = j;
-                rotate(goal_pose);
-                move2goal(goal_pose);
-            }
-        }
-        // The turtle moves to the side when a new iteration happens (since the x-value increases by 1).
+    //else throw connection error.
+    else{
+        ROS_ERROR("Could not connect to turtlebot...");
     }
-    */
 
     return 0;
 }
