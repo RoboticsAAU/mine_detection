@@ -5,7 +5,7 @@
 #include <math.h>
 #include <turtlesim/Pose.h>
 
-using namespace cv;
+//using namespace cv;
 using namespace std;
 
 ros::Publisher point_pub;
@@ -22,7 +22,7 @@ void poseCallback(const turtlesim::Pose::ConstPtr &pose_message);
 double degreesToRadians(double angleDegrees);
 point pixelsToMeters(point coordInPixels, double length);
 point rotatePointByAngle(double angle, point coord);
-point convertCoordinatesOfPoint(vector<Point> coord);
+point convertCoordinatesOfPoint(point Coord);
 
 turtlesim::Pose cur_pose;
 
@@ -34,7 +34,7 @@ int main(int argc, char **argv)
      int boundColour[] = {0, 0, 255};
      int contourColour[] = {0, 255, 0};
 
-     int surflimit = 250;
+     int surflimit = 50;
      int surfacedif;
 
      ros::init(argc, argv, "mine_detector");
@@ -43,7 +43,7 @@ int main(int argc, char **argv)
      // sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
      // point_pub = n.advertise<point_coords.msg>("/paper_pose", 10);
 
-     VideoCapture cap(0); //Capture the video from webcam.
+     cv::VideoCapture cap(1); //Capture the video from webcam.
 
      if (!cap.isOpened()) //If not success, exit program.
      {
@@ -51,7 +51,7 @@ int main(int argc, char **argv)
           return -1;
      }
 
-     namedWindow("Control", CV_WINDOW_AUTOSIZE); //Create a window called "Control".
+     cv::namedWindow("Control", CV_WINDOW_AUTOSIZE); //Create a window called "Control".
 
      int iLowH = 0;
      int iHighH = 179;
@@ -63,14 +63,14 @@ int main(int argc, char **argv)
      int iHighV = 255;
 
      //Create trackbars in "Control" window.
-     createTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
-     createTrackbar("HighH", "Control", &iHighH, 179);
+     cv::createTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
+     cv::createTrackbar("HighH", "Control", &iHighH, 179);
 
-     createTrackbar("LowS", "Control", &iLowS, 255); //Saturation (0 - 255)
-     createTrackbar("HighS", "Control", &iHighS, 255);
+     cv::createTrackbar("LowS", "Control", &iLowS, 255); //Saturation (0 - 255)
+     cv::createTrackbar("HighS", "Control", &iHighS, 255);
 
-     createTrackbar("LowV", "Control", &iLowV, 255); //Value (0 - 255)
-     createTrackbar("HighV", "Control", &iHighV, 255);
+     cv::createTrackbar("LowV", "Control", &iLowV, 255); //Value (0 - 255)
+     cv::createTrackbar("HighV", "Control", &iHighV, 255);
 
      int check = 0; //used for defining how many frames to skip for defining last rectangle surface
 
@@ -79,12 +79,12 @@ int main(int argc, char **argv)
 
           
 
-          Mat imgOriginal;
+          cv::Mat imgOriginal;
 
           bool bSuccess = cap.read(imgOriginal); //Read a new frame from video.
           
           check++; //add 1 to check 
-          cout << "Itteration----------------------------------------------------------------------------------------" << check << endl;
+          //cout << "Itteration----------------------------------------------------------------------------------------" << check << endl;
 
           if (!bSuccess) //If not success, break loop.
           {
@@ -92,51 +92,51 @@ int main(int argc, char **argv)
                break;
           }
 
-          Mat imgHSV;
+          cv::Mat imgHSV;
 
-          cvtColor(imgOriginal, imgHSV, COLOR_BGR2HSV); //Convert the captured frame from BGR to HSV.
+          cvtColor(imgOriginal, imgHSV, cv::COLOR_BGR2HSV); //Convert the captured frame from BGR to HSV.
 
-          Mat imgThresholded;
+          cv::Mat imgThresholded;
 
-          inRange(imgHSV, Scalar(iLowH, iLowS, iLowV), Scalar(iHighH, iHighS, iHighV), imgThresholded); //Threshold the image.
+          cv::inRange(imgHSV, cv::Scalar(iLowH, iLowS, iLowV), cv::Scalar(iHighH, iHighS, iHighV), imgThresholded); //Threshold the image.
 
           //Morphological opening (removes small objects from the foreground).
-          erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
-          dilate(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+          erode(imgThresholded, imgThresholded, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
+          dilate(imgThresholded, imgThresholded, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
 
           //Morphological closing (removes small holes from the foreground).
-          dilate(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
-          erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+          dilate(imgThresholded, imgThresholded, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
+          erode(imgThresholded, imgThresholded, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
           
 
-          vector<vector<Point>> contours;
+          vector<vector<cv::Point>> contours;
 
-          findContours(imgThresholded, contours, RETR_TREE, CHAIN_APPROX_SIMPLE, Point(0, 0));
+          findContours(imgThresholded, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
 
-          vector<Rect> boundbox(contours.size());
-          vector<vector<Point>> contours_poly(contours.size());
+          vector<cv::Rect> boundbox(contours.size());
+          vector<vector<cv::Point>> contours_poly(contours.size());
                     
           for (size_t i = 0; i < contours.size(); i++)
           {
                
-               approxPolyDP(Mat(contours[i]), contours_poly[i], 3, true);                         
+               approxPolyDP(cv::Mat(contours[i]), contours_poly[i], 3, true);                         
                boundbox[i] = boundingRect(contours_poly[i]);
           }           
 
           for (size_t i = 0; i < contours.size(); i++)
           {         
                drawContours(imgOriginal, contours_poly, -1, (contourColour[0], contourColour[1], contourColour[2]), 3);      
-               rectangle(imgOriginal, boundbox[i].tl(), boundbox[i].br(), (boundColour[0], boundColour[1], boundColour[2]), 2, 8, 0);               
+               rectangle(imgOriginal, boundbox[i].tl(), boundbox[i].br(), (boundColour[0], boundColour[1], boundColour[2]), 2, 8, 0);    
+               //std::cout << boundbox[i].tl() << boundbox[i].br() <<  std::endl;
           }
 
           imshow("Thresholded Image", imgThresholded); //show the thresholded image
           imshow("Original", imgOriginal);             //show the original image
                
-               vector<Point> rectCenter(boundbox.size()); //current boundingbox center coordinates
+               vector<cv::Point> rectCenter(boundbox.size()); //current boundingbox center coordinates
                
                vector<int> rectSurface(boundbox.size());     //surface area of boundingbox last frame
                lastRectSurface.resize(boundbox.size()); //surface area of boundingbox last frame
-
 
                for (size_t i = 0; i < boundbox.size(); i++ ) { 
                     // cout << "bounding amount = " << boundbox.size() << endl;                    
@@ -146,15 +146,15 @@ int main(int argc, char **argv)
                     rectSurface[i] = boundbox[i].width * boundbox[i].height;
 
                     surfacedif = lastRectSurface[i] - rectSurface[i];
-
+                    /*
                     cout << "surface = " << rectSurface[i] << endl;
                     cout << "last surface = " << lastRectSurface[i] << endl;
                     cout << "surface dif = " << surfacedif << endl;
                     cout << "surface limit = " << surflimit << endl;
-
+                    */
                     if (surfacedif > surflimit) { //if bounding rectangle is smaller than last frame save coordinated of bounding rectangle
-                         rectCenter[i] = {boundbox[i].x + (boundbox[i].width/2), boundbox[i].x + (boundbox[i].height/2)};
-                         cout << "center = " << rectCenter[i] << endl;
+                         rectCenter[i] = {boundbox[i].x + (boundbox[i].width/2), boundbox[i].y + (boundbox[i].height/2)};
+                         //cout << "center = " << rectCenter[i] << endl;
                     }                    
                     lastRectSurface[i] = rectSurface[i];
                     
@@ -162,21 +162,27 @@ int main(int argc, char **argv)
 
                if (rectCenter.size() != 0) 
                {
-                         for (size_t i = 0; i == rectCenter.size(); i++)
-                         {
-                         point pointCent;
-                         pointCent.x = double(rectCenter.at(i).x);
-                         pointCent.y = double(rectCenter.at(i).y);
+                    for (size_t i = 0; i < rectCenter.size(); i++)
+                    { 
+                    point centerCoord;
+                    centerCoord.x = double(rectCenter.at(i).x);
+                    centerCoord.y = double(rectCenter.at(i).y);
 
-                         std::cout << rectCenter.at(i).x << " : " << rectCenter.at(i).y;
-                         std::cout << pointCent.x << " : " << pointCent.y;
-                         std::cout << "yess";
-                         //point pointCentConverted = convertCoordinatesOfPoint(pointCent);
-                         //point_pub = pointCentConverted.x;
+                   
+                    //std::cout << rectCenter.at(i).x << " : " << rectCenter.at(i).y;
+                         if (centerCoord.x && centerCoord.y != 0)
+                         {
+                         point paperPoint = convertCoordinatesOfPoint(centerCoord);
+                         std::cout << centerCoord.x << " ; " << centerCoord.y << std::endl;
+                         std::cout << "Paperpoint: " << paperPoint.x << " ; " << paperPoint.y << "\n";
+                         /*//point_pub = pointCentConverted.x;
+                         
+                         */
                          }
+                    }
                } 
 
-          if (waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
+          if (cv::waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
           {
                std::cout << "esc key is pressed by user" << endl;
                break;
@@ -204,8 +210,8 @@ double degreesToRadians(double angleDegrees)
 point pixelsToMeters(point coordInPixels, double length)
 {
      point coordInMeters;
-     coordInMeters.x = coordInPixels.x * (length / 1920);
-     coordInMeters.y = coordInPixels.y * (length / 1920);
+     coordInMeters.x = coordInPixels.x * (length / 640);
+     coordInMeters.y = coordInPixels.y * (length / 640);
      return coordInMeters;
 }
 
@@ -218,17 +224,18 @@ point rotatePointByAngle(double angle, point coord)
      return rotatedPoint;
 }
 
-point convertCoordinatesOfPoint(point coord)
+point convertCoordinatesOfPoint(point Coord)
 {
      // Changable variables: Diagonal FOV of the camera, and the camera distance to the ground.
-     double FOV = 78;
+     double FOV = 64; //78
      double distFromGroundCam = 0.35;
 
      //The following determines the measurements (length and width) of the area that the camera projects.
      double halfFOV = degreesToRadians(FOV / 2);
+     std::cout << "HalfFOV: " << halfFOV;
      double B = M_PI - M_PI_2 - halfFOV;
      double a = (distFromGroundCam / sin(B)) * sin(halfFOV);
-     double alpha = atan2(9, 16);
+     double alpha = atan2(3, 4);
 
      double length = 2 * cos(alpha) * a;
      double width = 2 * sin(alpha) * a;
@@ -236,8 +243,8 @@ point convertCoordinatesOfPoint(point coord)
 
      //The coordinates of the found point in pixels.
      point coordInPixel; //Use the coordinates that will be published, the current values are for testing only.
-     coordInPixel.x = coord.x;
-     coordInPixel.y = coord.y;
+     coordInPixel.x = Coord.x;
+     coordInPixel.y = Coord.y;
 
      //Converts the point's coordinates from pixels to meters using the pixelsToMeters function.
      point coordInMeters = pixelsToMeters(coordInPixel, length);
@@ -277,8 +284,8 @@ point convertCoordinatesOfPoint(point coord)
      //The coordinates of the found paper from the robots Origin point.
      //Determined from the coordinates of the robot from its Origin + the vector from the robot centre to the found point.
      point paperPoint;
-     paperPoint.x = cur_pose.x + rotatedPoint.x;
-     paperPoint.y = cur_pose.y + rotatedPoint.y;
-     std::cout << "Paperpoint: " << paperPoint.x << " ; " << paperPoint.y << "\n";
+     paperPoint.x = 0 + rotatedPoint.x; //cur_pose.x
+     paperPoint.y = 0 + rotatedPoint.y; //cur_pose.y
      return paperPoint;
-}
+} 
+
