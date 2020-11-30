@@ -4,8 +4,7 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include <math.h>
 #include <turtlesim/Pose.h>
-
-//using namespace cv;
+#include "geometry_msgs/Point.h"
 using namespace std;
 
 ros::Publisher point_pub;
@@ -39,9 +38,8 @@ int main(int argc, char **argv)
 
      ros::init(argc, argv, "mine_detector");
      ros::NodeHandle n;
-
-     // sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
-     // point_pub = n.advertise<point_coords.msg>("/paper_pose", 10);
+     point_pub = n.advertise<geometry_msgs::Point>("/mine/pose", 10);
+     sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
 
      cv::VideoCapture cap(1); //Capture the video from webcam.
 
@@ -109,7 +107,7 @@ int main(int argc, char **argv)
           erode(imgThresholded, imgThresholded, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
           
 
-          vector<vector<cv::Point>> contours;
+          vector<vector<cv::Point>> contours; // makes a 2D vector containing points
 
           findContours(imgThresholded, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
 
@@ -173,11 +171,14 @@ int main(int argc, char **argv)
                          if (centerCoord.x && centerCoord.y != 0)
                          {
                          point paperPoint = convertCoordinatesOfPoint(centerCoord);
-                         std::cout << centerCoord.x << " ; " << centerCoord.y << std::endl;
-                         std::cout << "Paperpoint: " << paperPoint.x << " ; " << paperPoint.y << "\n";
-                         /*//point_pub = pointCentConverted.x;
-                         
-                         */
+                         //std::cout << "Paperpoint: " << paperPoint.x << " ; " << paperPoint.y << "\n";
+                         geometry_msgs::Point point_msg;
+                         point_msg.x = paperPoint.x;
+                         point_msg.y = paperPoint.y;
+
+                         // point_pub = n.advertise<point_coords.msg>("/paper_pose", 10);
+                         point_pub.publish(point_msg);
+                         //loop_rate.sleep();
                          }
                     }
                } 
@@ -232,7 +233,6 @@ point convertCoordinatesOfPoint(point Coord)
 
      //The following determines the measurements (length and width) of the area that the camera projects.
      double halfFOV = degreesToRadians(FOV / 2);
-     std::cout << "HalfFOV: " << halfFOV;
      double B = M_PI - M_PI_2 - halfFOV;
      double a = (distFromGroundCam / sin(B)) * sin(halfFOV);
      double alpha = atan2(3, 4);
@@ -278,14 +278,15 @@ point convertCoordinatesOfPoint(point Coord)
 
      //The found point is rotated to fit with the robots coodinate-system.
      //It is then rotated with the current angle of the robot measured from the x-axis to determine the correct position of the point compared to the robot.
-     point rotatedPoint = rotatePointByAngle(0, coordInMetersToRobotOrigo);
-     std::cout << "RotatedPoint: " << rotatedPoint.x << " ; " << rotatedPoint.y << "\n";
+     point rotatedPoint = rotatePointByAngle(cur_pose.theta, coordInMetersToRobotOrigo);
+     //std::cout << "RotatedPoint: " << rotatedPoint.x << " ; " << rotatedPoint.y << "\n";
 
      //The coordinates of the found paper from the robots Origin point.
      //Determined from the coordinates of the robot from its Origin + the vector from the robot centre to the found point.
+     
      point paperPoint;
-     paperPoint.x = 0 + rotatedPoint.x; //cur_pose.x
-     paperPoint.y = 0 + rotatedPoint.y; //cur_pose.y
+     paperPoint.x = cur_pose.x + rotatedPoint.x; //cur_pose.x
+     paperPoint.y = cur_pose.y + rotatedPoint.y; //cur_pose.y
      return paperPoint;
 } 
 
