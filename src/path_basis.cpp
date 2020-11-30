@@ -177,6 +177,9 @@ int main(int argc, char *argv[])
         //loop through the vector.
         for (int i = 0; i < vec.size(); i++)
         {
+            ros::spinOnce();
+            std::cout << i << " points cleared." << std::endl;
+
             //create a point from each element.
             Point p = vec.at(i);
 
