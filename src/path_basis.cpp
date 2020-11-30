@@ -6,6 +6,7 @@
 #include <turtlesim/Pose.h>
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/Empty.h>
+#include <visualization_msgs/Marker.h>
 
 #include <move.h>
 #include <points_gen.h>
@@ -138,7 +139,6 @@ int main(int argc, char *argv[])
     sub_pose = n.subscribe("/odom", 1000, &poseCallback);
     points_pub = n.advertise<visualization_msgs::Marker>("/visualization_marker", 1);
 
-    /*
     std::cout << "Resetting odometry..." << std::endl;
     while (reset_pub.getNumSubscribers() == 0)
     {
@@ -169,6 +169,7 @@ int main(int argc, char *argv[])
     std::vector<Points_gen::Point> vec;
     vec = points_instance.gen_Point_list();
 
+    points_instance.rvizPoints(points_pub, vec);
     for (Point p : vec)
     {
         if (p.stop)
