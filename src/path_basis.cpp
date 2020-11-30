@@ -19,6 +19,7 @@ using namespace Points_gen;
 ros::Publisher reset_pub;
 ros::Publisher vel_pub;
 ros::Subscriber sub_pose;
+ros::Publisher points_pub;
 
 struct Vector2D
 {
@@ -135,7 +136,9 @@ int main(int argc, char *argv[])
     reset_pub = n.advertise<std_msgs::Empty>("/mobile_base/commands/reset_odometry", 10);
     vel_pub = n.advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/navi", 10);
     sub_pose = n.subscribe("/odom", 1000, &poseCallback);
+    points_pub = n.advertise<visualization_msgs::Marker>("/visualization_marker", 1);
 
+    /*
     std::cout << "Resetting odometry..." << std::endl;
     while (reset_pub.getNumSubscribers() == 0)
     {
