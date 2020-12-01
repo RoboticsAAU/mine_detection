@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
     reset_pub = n.advertise<std_msgs::Empty>("/mobile_base/commands/reset_odometry", 10);
     vel_pub = n.advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/navi", 10);
     sub_pose = n.subscribe("/odom", 1000, &poseCallback);
-    points_pub = n.advertise<visualization_msgs::Marker>("/visualization_marker", 100);
+    points_pub = n.advertise<visualization_msgs::Marker>("/visualization_marker", 200);
 
     ROS_INFO("Resetting odometry...");
     while (reset_pub.getNumSubscribers() == 0)
@@ -160,16 +160,27 @@ int main(int argc, char *argv[])
     vec = points_instance.gen_Point_list();
 
     //check if points pub has subscribers.
-    if (points_pub.getNumSubscribers() != 0)
+
+    ros::Rate retry_rate(1);
+    for (int i = 0; i < 10; i++)
     {
-        //publish points to rviz.
-        points_instance.rvizPoints(points_pub, vec);
-    }
-    else
-    {
-        ROS_WARN("Could not connect to rviz...");
+        if (points_pub.getNumSubscribers() != 0)
+        {
+            //publish points to rviz.
+            points_instance.rvizPoints(points_pub, vec);
+            ROS_INFO("Connected to rviz.");
+            break;
+        }
+        ROS_WARN("Connecting to rviz...");
+        if (i == 9)
+        {
+            ROS_ERROR("Could not connect to rviz.");
+            break;
+        }
+        retry_rate.sleep();
     }
 
+    std::cin.get();
     //process callback to ensure connections are established.
     ros::spinOnce();
 
