@@ -130,7 +130,6 @@ int main(int argc, char *argv[])
     ros::init(argc, argv, "mine_detection_path_planning");
     ros::NodeHandle n;
 
-
     reset_pub = n.advertise<std_msgs::Empty>("/mobile_base/commands/reset_odometry", 10);
     vel_pub = n.advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/navi", 10);
     sub_pose = n.subscribe("/odom", 1000, &poseCallback);
@@ -161,24 +160,30 @@ int main(int argc, char *argv[])
     vec = points_instance.gen_Point_list();
 
     //check if points pub has subscribers.
-    if(points_pub.getNumSubscribers() != 0){
+    if (points_pub.getNumSubscribers() != 0)
+    {
         //publish points to rviz.
         points_instance.rvizPoints(points_pub, vec);
     }
-    else{
+    else
+    {
         ROS_WARN("Could not connect to rviz...");
-    }   
+    }
 
-    //process callback to ensure connections are established. 
+    //process callback to ensure connections are established.
     ros::spinOnce();
 
+    double percentage = 0;
+
     //check if vel_pub has subscribers.
-    if(vel_pub.getNumSubscribers() != 0){
+    if (vel_pub.getNumSubscribers() != 0)
+    {
         //loop through the vector.
         for (int i = 0; i < vec.size(); i++)
         {
             ros::spinOnce();
-            std::cout << i << " points cleared." << std::endl;
+            percentage = i;
+            std::cout << std::fixed << std::setprecision(2) << percentage / 195 * 100 << "% cleared." << std::endl;
 
             //create a point from each element.
             Point p = vec.at(i);
@@ -186,7 +191,8 @@ int main(int argc, char *argv[])
             //temp is used to count until a stop points is reached.
             int temp = i;
             //if at stop: rotate.
-            if(vec.at(temp).stop || vec.at(temp -1).stop){
+            if (vec.at(temp).stop || vec.at(temp - 1).stop)
+            {
                 rotate(p);
             }
             //count untill the next stop point.
@@ -197,12 +203,12 @@ int main(int argc, char *argv[])
             //move to the goal, using the next point p, as angular vel,
             //and temp, as the linear vel guide.
             move2goal(p, vec.at(temp));
-            
         }
         std::cout << "Done";
     }
     //else throw connection error.
-    else{
+    else
+    {
         ROS_ERROR("Could not connect to turtlebot...");
     }
 
