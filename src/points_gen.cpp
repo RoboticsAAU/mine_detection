@@ -15,6 +15,8 @@ std::vector<Point> points_List::gen_Point_list()
     //n is width
     double m = 5.0;
     double n = 5.0;
+    //Distance between points
+    double point_distance = 0.05;
     //robot radius in meters
     double robot_radius = 0.175;
     //count used to generate the points in the correct order.
@@ -27,7 +29,7 @@ std::vector<Point> points_List::gen_Point_list()
         if (count % 2 == 0)
         {
             //iterate through the field in correct assending order.
-            for (double j = robot_radius; j < n; j += 2 * robot_radius)
+            for (double j = robot_radius; j < n; j += point_distance)
             {
                 //create a point.
                 Point p = {i, j};
@@ -43,7 +45,7 @@ std::vector<Point> points_List::gen_Point_list()
         else
         {
             //if count is uneven, itterate through in dessending order.
-            for (double j = n - robot_radius; j > 0; j -= 2 * robot_radius)
+            for (double j = n - robot_radius; j > 0; j -= point_distance)
             {
                 //create a point.
                 Point p = {i, j};
