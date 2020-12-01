@@ -26,17 +26,15 @@ point pixelsToMeters(point coordInPixels, double length);
 point rotatePointByAngle(double angle, point coord);
 point convertCoordinatesOfPoint(point Coord);
 
-
-
 int main(int argc, char **argv)
 {
 
      vector<int> lastRectSurface; //surface area of boundingbox last frame
-
+     vector<bool> shouldPublish;
      int boundColour[] = {0, 0, 255};
      int contourColour[] = {0, 255, 0};
-
-     int surflimit = 50;
+     int surflimit = 250; //surflimit defines the lower boundary, where an object will be countoured and for which a bounding box will be made
+     int upperLimitOfdecrease = 100; // this defines the upper limit for the change of the size of the bounding boxes 
      int surfacedif;
 
      ros::init(argc, argv, "paper_detector");
@@ -44,7 +42,7 @@ int main(int argc, char **argv)
      point_pub = n.advertise<geometry_msgs::Point>("/paper/pose", 10);
      sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
 
-     cv::VideoCapture cap(1); //Capture the video from webcam.
+     cv::VideoCapture cap(0); //Capture the video from webcam.
 
      if (!cap.isOpened()) //If not success, exit program.
      {
@@ -73,19 +71,11 @@ int main(int argc, char **argv)
      cv::createTrackbar("LowV", "Control", &iLowV, 255); //Value (0 - 255)
      cv::createTrackbar("HighV", "Control", &iHighV, 255);
 
-     int check = 0; //used for defining how many frames to skip for defining last rectangle surface
-
      while (ros::ok())
      {
-
-          
-
           cv::Mat imgOriginal;
 
           bool bSuccess = cap.read(imgOriginal); //Read a new frame from video.
-          
-          check++; //add 1 to check 
-          //cout << "Itteration----------------------------------------------------------------------------------------" << check << endl;
 
           if (!bSuccess) //If not success, break loop.
           {
@@ -94,11 +84,8 @@ int main(int argc, char **argv)
           }
 
           cv::Mat imgHSV;
-
           cvtColor(imgOriginal, imgHSV, cv::COLOR_BGR2HSV); //Convert the captured frame from BGR to HSV.
-
           cv::Mat imgThresholded;
-
           cv::inRange(imgHSV, cv::Scalar(iLowH, iLowS, iLowV), cv::Scalar(iHighH, iHighS, iHighV), imgThresholded); //Threshold the image.
 
           //Morphological opening (removes small objects from the foreground).
@@ -134,56 +121,48 @@ int main(int argc, char **argv)
           imshow("Thresholded Image", imgThresholded); //show the thresholded image
           imshow("Original", imgOriginal);             //show the original image
                
-               vector<cv::Point> rectCenter(boundbox.size()); //current boundingbox center coordinates
-               
-               vector<int> rectSurface(boundbox.size());     //surface area of boundingbox last frame
-               lastRectSurface.resize(boundbox.size()); //surface area of boundingbox last frame
+          vector<cv::Point> rectCenter(boundbox.size()); //current boundingbox center coordinates
+          shouldPublish.resize(rectCenter.size(), true);
+          //for (int j = 0; j =< rectCenter.size(); j++)
+          //cout << " "
+          vector<int> rectSurface(boundbox.size());     //surface area of boundingbox last frame
+          lastRectSurface.resize(boundbox.size()); //surface area of boundingbox last frame
 
-               for (size_t i = 0; i < boundbox.size(); i++ ) { 
-                    // cout << "bounding amount = " << boundbox.size() << endl;                    
-                    // cout << "width = " << boundbox[i].width << endl; 
-                    // cout << "heigth = " << boundbox[i].height << endl;                                        
-                    
-                    rectSurface[i] = boundbox[i].width * boundbox[i].height;
+          for (size_t i = 0; i < boundbox.size(); i++ ) 
+          {                                  
+               rectSurface[i] = boundbox[i].width * boundbox[i].height;
+               surfacedif = lastRectSurface[i] - rectSurface[i];
+               if (surfacedif > surflimit)  //if bounding rectangle is smaller than last frame save coordinated of bounding rectangle
+               {     
+                    rectCenter[i] = {boundbox[i].x + (boundbox[i].width/2), boundbox[i].y + (boundbox[i].height/2)};;
+                    for (size_t i = 0; i < rectCenter.size(); i++)
+                    {
+                         point centerCoord;
+                         centerCoord.x = double(rectCenter.at(i).x);
+                         centerCoord.y = double(rectCenter.at(i).y);
 
-                    surfacedif = lastRectSurface[i] - rectSurface[i];
-                    /*
-                    cout << "surface = " << rectSurface[i] << endl;
-                    cout << "last surface = " << lastRectSurface[i] << endl;
-                    cout << "surface dif = " << surfacedif << endl;
-                    cout << "surface limit = " << surflimit << endl;
-                    */
-                    if (surfacedif > surflimit) { //if bounding rectangle is smaller than last frame save coordinated of bounding rectangle
-                         rectCenter[i] = {boundbox[i].x + (boundbox[i].width/2), boundbox[i].y + (boundbox[i].height/2)};
-                         //cout << "center = " << rectCenter[i] << endl;
-                    }                    
-                    lastRectSurface[i] = rectSurface[i];
-                    
-               }
+                         if (centerCoord.x && centerCoord.y != 0 && shouldPublish[i] == true)
+                         {
+                              point paperPoint = convertCoordinatesOfPoint(centerCoord);
+                              geometry_msgs::Point point_msg;
+                              point_msg.x = paperPoint.x;
+                              point_msg.y = paperPoint.y;
+                              point_pub.publish(point_msg);
+                              shouldPublish[i] = false;
+                         }
+                    }
+               } 
+               //if(i > 2 && rectsurf[i-2]<rectsurf[i-1]>rectsurf[i])
+               /*if (surfacedif < surflimit)
+               {
+               shouldPublish[i] = false;
+               }*/
+               lastRectSurface[i] = rectSurface[i]; 
+          }
 
                if (rectCenter.size() != 0) 
                {
-                    for (size_t i = 0; i < rectCenter.size(); i++)
-                    { 
-                    point centerCoord;
-                    centerCoord.x = double(rectCenter.at(i).x);
-                    centerCoord.y = double(rectCenter.at(i).y);
-
-                   
-                    //std::cout << rectCenter.at(i).x << " : " << rectCenter.at(i).y;
-                         if (centerCoord.x && centerCoord.y != 0)
-                         {
-                         point paperPoint = convertCoordinatesOfPoint(centerCoord);
-                         //std::cout << "Paperpoint: " << paperPoint.x << " ; " << paperPoint.y << "\n";
-                         geometry_msgs::Point point_msg;
-                         point_msg.x = paperPoint.x;
-                         point_msg.y = paperPoint.y;
-
-                         // point_pub = n.advertise<point_coords.msg>("/paper_pose", 10);
-                         point_pub.publish(point_msg);
-                         //loop_rate.sleep();
-                         }
-                    }
+                    
                } 
 
           if (cv::waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
