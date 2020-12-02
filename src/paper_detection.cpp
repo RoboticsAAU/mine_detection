@@ -53,14 +53,14 @@ int main(int argc, char **argv)
 
      cv::namedWindow("Control", CV_WINDOW_AUTOSIZE); //Create a window called "Control".
 
-     int iLowH = 172;
+     int iLowH = 000;
      int iHighH = 179;
 
-     int iLowS = 165;
+     int iLowS = 191;
      int iHighS = 255;
 
-     int iLowV = 150;
-     int iHighV = 255;
+     int iLowV = 185;
+     int iHighV = 222;
 
      //Create trackbars in "Control" window.
      cv::createTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
