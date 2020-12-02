@@ -11,7 +11,8 @@
         "hash_map": "cpp",
         "hash_set": "cpp",
         "initializer_list": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "*.tcc": "cpp"
     },
     "ros.distro": "kinetic"
 }
