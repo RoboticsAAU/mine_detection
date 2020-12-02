@@ -97,15 +97,10 @@ int main(int argc, char *argv[])
         if (points.size() > 3)
         {
             center = getCenterOfCircle(&points);
-            double radius = obstacleRadius(center, points[0]);
 
             obstacle_msg.x = center.x;
             obstacle_msg.y = center.y;
-            obstacle_msg.r = radius;
-
-            std::cout << "Center: " << center.x << " : " << center.y << std::endl;
-            std::cout << "Radius: " << radius << std::endl;
-            std::cout << std::endl;
+            obstacle_msg.r = obstacleRadius(center, points[0]);
 
             obstacle_pub.publish(obstacle_msg);
         }
