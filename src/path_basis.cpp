@@ -7,6 +7,7 @@
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/Empty.h>
 #include <visualization_msgs/Marker.h>
+#include "mine_detection/Obstacle.h"
 
 #include <move.h>
 #include <points_gen.h>
@@ -126,6 +127,10 @@ void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message)
     //std::cout << "angle: " << angles.yaw << " x: " << cur_pose.x << " y: " << cur_pose.y << std::endl;
 }
 
+void obstacleCallback(const mine_detection::Obstacle::ConstPtr &obs_msg)
+{
+}
+
 int main(int argc, char *argv[])
 {
     ros::init(argc, argv, "mine_detection_path_planning");
@@ -135,6 +140,7 @@ int main(int argc, char *argv[])
     vel_pub = n.advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/navi", 10);
     sub_pose = n.subscribe("/odom", 1000, &poseCallback);
     points_pub = n.advertise<visualization_msgs::Marker>("/visualization_marker", 200);
+    obstacle_sub = n.subscribe("/obstacle", 10, &obstacleCallback);
 
     ROS_INFO("Resetting odometry...");
     while (reset_pub.getNumSubscribers() == 0)

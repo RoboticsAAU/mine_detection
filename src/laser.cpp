@@ -83,7 +83,7 @@ double obstacleRadius(Point center, Point per_coordinate)
     return sqrt(pow(center.x - per_coordinate.x, 2) + pow(center.y - per_coordinate.y, 2));
 }
 
-visualization_msgs::Marker getRvizPoint(Point *center)
+visualization_msgs::Marker getRvizPoint(const Point *center, const double *radius)
 {
     visualization_msgs::Marker points;
     points.header.frame_id = "/odom";
@@ -95,10 +95,11 @@ visualization_msgs::Marker getRvizPoint(Point *center)
 
     points.id = 0;
 
-    points.type = visualization_msgs::Marker::POINTS;
+    points.type = visualization_msgs::Marker::CYLINDER;
 
-    points.scale.x = 0.1;
-    points.scale.y = 0.1;
+    points.scale.x = (*radius) * 2;
+    points.scale.y = (*radius) * 2;
+    points.scale.z = 0.5;
 
     points.color.r = 1.0f;
     points.color.g = 1.0f;
@@ -108,6 +109,9 @@ visualization_msgs::Marker getRvizPoint(Point *center)
     geometry_msgs::Point point;
     point.x = (*center).x;
     point.y = (*center).y;
+
+    points.pose.position.x = (*center).x;
+    points.pose.position.y = (*center).y;
     points.points.push_back(point);
 
     return points;
@@ -124,6 +128,7 @@ int main(int argc, char *argv[])
     ros::Rate loop_rate(10);
 
     Point center;
+    double radius;
     mine_detection::Obstacle obstacle_msg;
     while (ros::ok())
     {
@@ -134,9 +139,10 @@ int main(int argc, char *argv[])
 
             obstacle_msg.x = center.x;
             obstacle_msg.y = center.y;
-            obstacle_msg.r = obstacleRadius(center, points[0]);
+            radius = obstacleRadius(center, points[0]);
+            obstacle_msg.r = radius;
 
-            rviz_pub.publish(getRvizPoint(&center));
+            rviz_pub.publish(getRvizPoint(&center, &radius));
             obstacle_pub.publish(obstacle_msg);
         }
         loop_rate.sleep();
