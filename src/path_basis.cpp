@@ -127,8 +127,20 @@ void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message)
     //std::cout << "angle: " << angles.yaw << " x: " << cur_pose.x << " y: " << cur_pose.y << std::endl;
 }
 
+Vector2D offset = {0.08, 0.025};
 void obstacleCallback(const mine_detection::Obstacle::ConstPtr &obs_msg)
 {
+    Vector2D obstacle_robot;
+    obstacle_robot.x = obs_msg->x - offset.x;
+    obstacle_robot.y = obs_msg->y - offset.y;
+
+    Vector2D obstacle_robot_rotated = rotateVectorByAngle(getTheta(cur_pose.theta), obstacle_robot);
+
+    Vector2D obstacle_odom;
+    obstacle_odom.x = cur_pose.x + obstacle_robot_rotated.x;
+    obstacle_odom.y = cur_pose.y + obstacle_robot_rotated.y;
+
+    std::cout << obstacle_odom.x << " : " << obstacle_odom.y << std::endl;
 }
 
 int main(int argc, char *argv[])
@@ -294,8 +306,8 @@ bool IsClockwise(double angleActual, double angleDesired)
     Vector2D vectorActual = vectorByAngle(angleActual);
     Vector2D vectorDesired = vectorByAngle(angleDesired);
 
-    Vector2D rotatedVectorActual = rotateVectorByAngle(angleActual, vectorActual);
-    Vector2D rotatedVectorDesired = rotateVectorByAngle(angleActual, vectorDesired);
+    Vector2D rotatedVectorActual = rotateVectorByAngle(2 * M_PI - angleActual, vectorActual);
+    Vector2D rotatedVectorDesired = rotateVectorByAngle(2 * M_PI - angleActual, vectorDesired);
 
     return !VectorInUpperQuadrants(rotatedVectorDesired);
 }
@@ -311,8 +323,8 @@ bool VectorInUpperQuadrants(Vector2D vector)
 Vector2D rotateVectorByAngle(double angle, Vector2D vector)
 {
     Vector2D rotatedVector;
-    rotatedVector.x = vector.x * cos(2 * M_PI - angle) + vector.y * (-sin(2 * M_PI - angle));
-    rotatedVector.y = vector.x * sin(2 * M_PI - angle) + vector.y * cos(2 * M_PI - angle);
+    rotatedVector.x = vector.x * cos(angle) + vector.y * (-sin(angle));
+    rotatedVector.y = vector.x * sin(angle) + vector.y * cos(angle);
     return rotatedVector;
 }
 

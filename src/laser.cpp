@@ -15,7 +15,7 @@ struct Point
 };
 
 std::vector<Point> points;
-Point laser_offset = {0.08, 0.025};
+//Point laser_offset = ;
 
 ros::Subscriber laser_sub;
 ros::Publisher obstacle_pub;
@@ -119,7 +119,7 @@ visualization_msgs::Marker getRvizPoint(const Point *center, const double *radiu
 
 int main(int argc, char *argv[])
 {
-    ros::init(argc, argv, "laser_test");
+    ros::init(argc, argv, "laser_scan");
     ros::NodeHandle n;
 
     laser_sub = n.subscribe<sensor_msgs::LaserScan>("/scan", 10, &laserCallback);
