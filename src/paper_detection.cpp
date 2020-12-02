@@ -60,7 +60,7 @@ int main(int argc, char **argv)
      int iHighS = 255;
 
      int iLowV = 185;
-     int iHighV = 222;
+     int iHighV = 255;
 
      //Create trackbars in "Control" window.
      cv::createTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
