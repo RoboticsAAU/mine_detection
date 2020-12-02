@@ -6,6 +6,7 @@
 #include <turtlesim/Pose.h>
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/Empty.h>
+#include <visualization_msgs/Marker.h>
 
 #include <move.h>
 #include <points_gen.h>
@@ -19,9 +20,7 @@ using namespace Points_gen;
 ros::Publisher reset_pub;
 ros::Publisher vel_pub;
 ros::Subscriber sub_pose;
-
-
-turtlesim::Pose cur_pose;
+ros::Publisher points_pub;
 
 struct Vector2D
 {
@@ -34,7 +33,6 @@ bool VectorInUpperQuadrants(Vector2D vector);
 Vector2D rotateVectorByAngle(double angle, Vector2D vector);
 Vector2D vectorByAngle(double angle);
 
-
 double getTheta(double angle);
 void rotate(Point goal);
 void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message);
@@ -42,9 +40,11 @@ double euclidean_distance(double x1, double y1, double x2, double y2);
 double linear_velocity(Point goal);
 double angular_velocity(Point goal);
 double getAngle(Point goal);
-void move2goal(Point goal,Point stop_goal);
+void move2goal(Point goal, Point stop_goal);
 
 const double distance_tolerance = 0.05;
+
+turtlesim::Pose cur_pose;
 
 #pragma region Quaternion To Euler Angles conversion
 struct Quaternion
@@ -130,114 +130,98 @@ int main(int argc, char *argv[])
     ros::init(argc, argv, "mine_detection_path_planning");
     ros::NodeHandle n;
 
-    double speed, angular_speed;
-    double distance, angle;
-    bool isForward, clockwise;
-
     reset_pub = n.advertise<std_msgs::Empty>("/mobile_base/commands/reset_odometry", 10);
     vel_pub = n.advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/navi", 10);
     sub_pose = n.subscribe("/odom", 1000, &poseCallback);
+    points_pub = n.advertise<visualization_msgs::Marker>("/visualization_marker", 200);
 
-    std::cout << "Resetting odometry..." << std::endl;
+    ROS_INFO("Resetting odometry...");
     while (reset_pub.getNumSubscribers() == 0)
     {
         ros::spinOnce();
     }
-    
+
+    //publish empty string to reset odometry.
     std_msgs::Empty e;
     reset_pub.publish(e);
-    std::cout << "Done" << std::endl;
+    ROS_INFO("Reset succesfully");
 
-    while (reset_pub.getNumSubscribers() == 0)
-    {
-        ros::spinOnce();
-    }
-    
-    reset_pub.publish(e);
+    ros::Rate loop_rate(10);
 
     Point goal_pose;
 
-    std::cin.get();
-    
-    //create instance of the Move class.
-    //Move move_instance;
-   
-    //create a pointer to the publisher, which holds the memory address of the pointer.
-    //ros::Publisher* vel_pub_ptr = &vel_pub;
-    
-    //call the move function, and pass the pointer in as an argument. 
-    //move_instance.move(2.0,2.0,true,vel_pub_ptr);
-
+    //create instance of points_list.
     points_List points_instance;
 
+    //create a vector of points.
     std::vector<Points_gen::Point> vec;
+
+    //retrieve points from pointsgen.cpp file.
     vec = points_instance.gen_Point_list();
 
-    for(Point p : vec){
-        if(p.stop) std::cout<< "stopping at: " << p.x << "," << p.y << std::endl;
-    }
-    std::cin.get();
+    //check if points pub has subscribers.
 
-    for(int i = 0; i < vec.size()-1; i++){
-        Point p = vec.at(i);
-
-        std::cout << "moving..." << std::endl;
-        std::cout << "Going to: " << goal_pose.x << " , " << goal_pose.y << endl;
-        
-        rotate(p);
-        if(p.stop){
-            move2goal(p,p); 
+    ros::Rate retry_rate(1);
+    for (int i = 0; i < 10; i++)
+    {
+        if (points_pub.getNumSubscribers() != 0)
+        {
+            //publish points to rviz.
+            points_instance.rvizPoints(points_pub, vec);
+            ROS_INFO("Connected to rviz.");
+            break;
         }
-        else{
-            int temp = ++i;
-            while(!vec.at(temp).stop){
+        ROS_WARN("Connecting to rviz...");
+        if (i == 9)
+        {
+            ROS_ERROR("Could not connect to rviz.");
+            break;
+        }
+        retry_rate.sleep();
+    }
+
+    std::cin.get();
+    //process callback to ensure connections are established.
+    ros::spinOnce();
+
+    double percentage = 0;
+
+    //check if vel_pub has subscribers.
+    if (vel_pub.getNumSubscribers() != 0)
+    {
+        //loop through the vector.
+        for (int i = 0; i < vec.size(); i++)
+        {
+            ros::spinOnce();
+            percentage = i;
+            std::cout << std::fixed << std::setprecision(2) << percentage / 195 * 100 << "% cleared." << std::endl;
+
+            //create a point from each element.
+            Point p = vec.at(i);
+
+            //temp is used to count until a stop points is reached.
+            int temp = i;
+            //if at stop: rotate.
+            if (vec.at(temp).stop || vec.at(temp - 1).stop)
+            {
+                rotate(p);
+            }
+            //count untill the next stop point.
+            while (!vec.at(temp).stop)
+            {
                 temp++;
             }
-            move2goal(p,vec.at(temp));
+            //move to the goal, using the next point p, as angular vel,
+            //and temp, as the linear vel guide.
+            move2goal(p, vec.at(temp));
         }
-
-        //std::cin.get();
+        std::cout << "Done";
     }
-    std::cout << "Done";
-
-    // The while loop fixes a bug where the turtle's coordinates are wrong when it spawns, by waiting for the turle's position to be updated.
-    // The turtle thinks it spawns at (0 ; 0), but it actually spawns at around (5,5 ; 5,5))
-    // while (cur_pose.x == 0)
-    // {
-    //     ros::spinOnce();
-    // }
-    /*
-    // The for loop as a whole is what makes the turtle move to the correct places in the correct order, thus making the boustrophedon decomposition.
-    // The outmost for loop is the overall amount of straight lines laterally (It does 10 lines).
-    for (int i = 1; i < 11; i++)
+    //else throw connection error.
+    else
     {
-        // When the x-coordinate is odd, the turtle moves upwards (increase in y-values).
-        if (i % 2 == 1)
-        {
-            for (int j = 1; j < 11; j++)
-            {
-                std::cout << "Going to: " << goal_pose.x << " , " << goal_pose.y << endl;
-                goal_pose.x = i;
-                goal_pose.y = j;
-                rotate(goal_pose);
-                move2goal(goal_pose);
-            }
-        }
-        // When the x-coordinate is even, the turtle moves downwards (decrease in y-values).
-        else
-        {
-            for (int j = 10; j > 0; j--)
-            {
-                std::cout << "Going to: " << i << " , " << j << endl;
-                goal_pose.x = i;
-                goal_pose.y = j;
-                rotate(goal_pose);
-                move2goal(goal_pose);
-            }
-        }
-        // The turtle moves to the side when a new iteration happens (since the x-value increases by 1).
+        ROS_ERROR("Could not connect to turtlebot...");
     }
-    */
 
     return 0;
 }
@@ -246,8 +230,6 @@ int main(int argc, char *argv[])
  * makes the robot move forward with a certain linear velocity for a
  * certain distance in a forward or backward straight direction.
  * */
-
-
 
 double getTheta(double angle)
 {
@@ -274,20 +256,19 @@ void rotate(Point goal)
     ros::spinOnce();
 
     // Rotates either clockwise (if=true) or counterclockwise (if=false) depending on which is shortest.
-    
 
     ros::Rate loop_rate(1000);
     // Rotates until turtle has rotated to desired angle (within 0.02 radians).
     do
     {
         if (IsClockwise(getTheta(cur_pose.theta), desired_angle))
-    {
-        vel_msg.angular.z = -fabs(angular_velocity(goal));
-    }
-    else
-    {
-        vel_msg.angular.z = fabs(angular_velocity(goal));
-    }
+        {
+            vel_msg.angular.z = -fabs(angular_velocity(goal));
+        }
+        else
+        {
+            vel_msg.angular.z = fabs(angular_velocity(goal));
+        }
 
         vel_pub.publish(vel_msg);
         ros::spinOnce();
@@ -299,7 +280,7 @@ void rotate(Point goal)
     vel_pub.publish(vel_msg);
 }
 
-#pragma region WIP
+#pragma region Shortest rotation
 // The function determines if the shortest rotation between the actual angle and the desired angle is clockwise or counterclockwise.
 bool IsClockwise(double angleActual, double angleDesired)
 {
@@ -350,7 +331,7 @@ double linear_velocity(Point goal)
 
     double linear_vel = kv * euclidean_distance(cur_pose.x, cur_pose.y, goal.x, goal.y);
 
-    return fabs(linear_vel) > max_linear_vel ? copysign(max_linear_vel,linear_vel) : linear_vel;
+    return fabs(linear_vel) > max_linear_vel ? copysign(max_linear_vel, linear_vel) : linear_vel;
 }
 
 double angular_velocity(Point goal)
@@ -360,7 +341,7 @@ double angular_velocity(Point goal)
 
     double angular_vel = ka * (getTheta(getAngle(goal)) - getTheta(cur_pose.theta));
 
-    return fabs(angular_vel) > max_angular_vel ? copysign(max_angular_vel,angular_vel) : angular_vel;
+    return fabs(angular_vel) > max_angular_vel ? copysign(max_angular_vel, angular_vel) : angular_vel;
 }
 
 // The function determines in which direction (meaning at what angle) it should move to get from the current position to the goal position.
@@ -370,7 +351,7 @@ double getAngle(Point goal)
 }
 
 // The function makes the turtle move to the given goal.
-void move2goal(Point goal,Point stop_goal)
+void move2goal(Point goal, Point stop_goal)
 {
 
     geometry_msgs::Twist vel_msg;
