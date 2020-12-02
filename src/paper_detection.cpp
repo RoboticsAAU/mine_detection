@@ -42,7 +42,8 @@ int main(int argc, char **argv)
      point_pub = n.advertise<geometry_msgs::Point>("/paper/pose", 10);
      sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
 
-     cv::VideoCapture cap(0); //Capture the video from webcam.
+     cv::VideoCapture cap(0); //Capture the video from webcam. 
+     //If the webcam cannot open, it is likely due to the iindex is wrong, thus it is trying to open a webcam that is not accessible through that index.
 
      if (!cap.isOpened()) //If not success, exit program.
      {
@@ -52,10 +53,10 @@ int main(int argc, char **argv)
 
      cv::namedWindow("Control", CV_WINDOW_AUTOSIZE); //Create a window called "Control".
 
-     int iLowH = 0;
+     int iLowH = 172;
      int iHighH = 179;
 
-     int iLowS = 150;
+     int iLowS = 165;
      int iHighS = 255;
 
      int iLowV = 150;
