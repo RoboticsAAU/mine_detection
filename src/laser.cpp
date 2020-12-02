@@ -3,7 +3,8 @@
 #include <iostream>
 #include <vector>
 #include <math.h>
-#include "mine_detection/Obstacle.h"
+#include <mine_detection/Obstacle.h>
+#include <visualization_msgs/Marker.h>
 
 //#include "obstacle.h"
 
@@ -18,6 +19,7 @@ Point laser_offset = {0.08, 0.025};
 
 ros::Subscriber laser_sub;
 ros::Publisher obstacle_pub;
+ros::Publisher rviz_pub;
 
 void laserCallback(const sensor_msgs::LaserScan::ConstPtr &laser_msg)
 {
@@ -31,7 +33,8 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr &laser_msg)
         angle = laser_msg->angle_min + (i * laser_msg->angle_increment);
         if (!std::isnan(laser_msg->ranges.at(i)))
         {
-            if (0.5 < laser_msg->ranges[i] && laser_msg->ranges[i] < 1)
+            //std::cout << "Callback" << std::endl;
+            if (laser_msg->range_min < laser_msg->ranges[i] && laser_msg->ranges[i] < 1)
             {
                 //std::cout << laser_msg->ranges.at(i) << std::endl;
                 Point p;
@@ -80,6 +83,36 @@ double obstacleRadius(Point center, Point per_coordinate)
     return sqrt(pow(center.x - per_coordinate.x, 2) + pow(center.y - per_coordinate.y, 2));
 }
 
+visualization_msgs::Marker getRvizPoint(Point *center)
+{
+    visualization_msgs::Marker points;
+    points.header.frame_id = "/odom";
+    points.ns = "obstacle namespace";
+    points.action = visualization_msgs::Marker::ADD;
+
+    points.pose.orientation.w = 1.0;
+    points.header.stamp = ros::Time::now();
+
+    points.id = 0;
+
+    points.type = visualization_msgs::Marker::POINTS;
+
+    points.scale.x = 0.1;
+    points.scale.y = 0.1;
+
+    points.color.r = 1.0f;
+    points.color.g = 1.0f;
+    points.color.b = 1.0f;
+    points.color.a = 1.0;
+
+    geometry_msgs::Point point;
+    point.x = (*center).x;
+    point.y = (*center).y;
+    points.points.push_back(point);
+
+    return points;
+}
+
 int main(int argc, char *argv[])
 {
     ros::init(argc, argv, "laser_test");
@@ -87,8 +120,9 @@ int main(int argc, char *argv[])
 
     laser_sub = n.subscribe<sensor_msgs::LaserScan>("/scan", 10, &laserCallback);
     obstacle_pub = n.advertise<mine_detection::Obstacle>("/obstacle", 10);
-
+    rviz_pub = n.advertise<visualization_msgs::Marker>("/visualization_marker", 10);
     ros::Rate loop_rate(10);
+
     Point center;
     mine_detection::Obstacle obstacle_msg;
     while (ros::ok())
@@ -102,6 +136,7 @@ int main(int argc, char *argv[])
             obstacle_msg.y = center.y;
             obstacle_msg.r = obstacleRadius(center, points[0]);
 
+            rviz_pub.publish(getRvizPoint(&center));
             obstacle_pub.publish(obstacle_msg);
         }
         loop_rate.sleep();

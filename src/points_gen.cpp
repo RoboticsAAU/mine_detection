@@ -76,7 +76,7 @@ void points_List::rvizPoints(ros::Publisher point_pub, std::vector<Point> point_
     //The default marker message members are 0.
     //frame id has to be the same as the robots position topic.
     points.header.frame_id = line_strip.header.frame_id = "/odom";
-    points.ns = line_strip.ns = "points namespace";
+    points.ns = line_strip.ns = "Path namespace";
     points.action = line_strip.action = visualization_msgs::Marker::ADD;
 
     //w must be a non-zero value to be displayed.

@@ -21,6 +21,7 @@ ros::Publisher reset_pub;
 ros::Publisher vel_pub;
 ros::Subscriber sub_pose;
 ros::Publisher points_pub;
+ros::Subscriber obstacle_sub;
 
 struct Vector2D
 {
