@@ -16,7 +16,7 @@ std::vector<Point> points_List::gen_Point_list()
     double m = 5.0;
     double n = 5.0;
     //Distance between points
-    double point_distance = 0.05;
+    double point_distance = 0.1;
     //robot radius in meters
     double robot_radius = 0.175;
     //count used to generate the points in the correct order.

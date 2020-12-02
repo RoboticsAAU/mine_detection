@@ -24,6 +24,8 @@ ros::Subscriber sub_pose;
 ros::Publisher points_pub;
 ros::Subscriber obstacle_sub;
 
+ros::Publisher *pointPtr;
+
 struct Vector2D
 {
     double x;
@@ -38,6 +40,7 @@ Vector2D vectorByAngle(double angle);
 double getTheta(double angle);
 void rotate(Point goal);
 void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message);
+visualization_msgs::Marker getRvizPoint(const Vector2D *center, double radius);
 double euclidean_distance(double x1, double y1, double x2, double y2);
 double linear_velocity(Point goal);
 double angular_velocity(Point goal);
@@ -128,6 +131,8 @@ void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message)
 }
 
 Vector2D offset = {0.08, 0.025};
+Vector2D obstacle_odom;
+double radius;
 void obstacleCallback(const mine_detection::Obstacle::ConstPtr &obs_msg)
 {
     Vector2D obstacle_robot;
@@ -136,11 +141,45 @@ void obstacleCallback(const mine_detection::Obstacle::ConstPtr &obs_msg)
 
     Vector2D obstacle_robot_rotated = rotateVectorByAngle(getTheta(cur_pose.theta), obstacle_robot);
 
-    Vector2D obstacle_odom;
     obstacle_odom.x = cur_pose.x + obstacle_robot_rotated.x;
     obstacle_odom.y = cur_pose.y + obstacle_robot_rotated.y;
-
+    radius = obs_msg->r;
     std::cout << obstacle_odom.x << " : " << obstacle_odom.y << std::endl;
+    pointPtr->publish(getRvizPoint(&obstacle_odom, obs_msg->r));
+}
+
+visualization_msgs::Marker getRvizPoint(const Vector2D *center, double radius)
+{
+    visualization_msgs::Marker points;
+    points.header.frame_id = "/odom";
+    points.ns = "obstacle namespace";
+    points.action = visualization_msgs::Marker::ADD;
+
+    points.pose.orientation.w = 1.0;
+    points.header.stamp = ros::Time::now();
+
+    points.id = 0;
+
+    points.type = visualization_msgs::Marker::CYLINDER;
+
+    points.scale.x = radius * 2;
+    points.scale.y = radius * 2;
+    points.scale.z = 0.5;
+
+    points.color.r = 1.0f;
+    points.color.g = 1.0f;
+    points.color.b = 1.0f;
+    points.color.a = 1.0;
+
+    geometry_msgs::Point point;
+    point.x = (*center).x;
+    point.y = (*center).y;
+
+    points.pose.position.x = (*center).x;
+    points.pose.position.y = (*center).y;
+    points.points.push_back(point);
+
+    return points;
 }
 
 int main(int argc, char *argv[])
@@ -148,11 +187,13 @@ int main(int argc, char *argv[])
     ros::init(argc, argv, "mine_detection_path_planning");
     ros::NodeHandle n;
 
+    points_pub = n.advertise<visualization_msgs::Marker>("/visualization_marker", 200);
     reset_pub = n.advertise<std_msgs::Empty>("/mobile_base/commands/reset_odometry", 10);
     vel_pub = n.advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/navi", 10);
     sub_pose = n.subscribe("/odom", 1000, &poseCallback);
-    points_pub = n.advertise<visualization_msgs::Marker>("/visualization_marker", 200);
     obstacle_sub = n.subscribe("/obstacle", 10, &obstacleCallback);
+
+    pointPtr = &points_pub;
 
     ROS_INFO("Resetting odometry...");
     while (reset_pub.getNumSubscribers() == 0)
@@ -346,7 +387,7 @@ double euclidean_distance(double x1, double y1, double x2, double y2)
 double linear_velocity(Point goal)
 {
     double kv = 0.5;
-    double max_linear_vel = 0.3;
+    double max_linear_vel = 0.2;
 
     double linear_vel = kv * euclidean_distance(cur_pose.x, cur_pose.y, goal.x, goal.y);
 
