@@ -1,0 +1,6 @@
+<launch>
+<include file="$(find turtlebot_bringup)/launch/minimal.launch"/>
+<remap from="/cmd_vel_mux/input/navi" to="/mobile_base/commands/velocity" />
+<node name="path_basis_node" pkg="mine_detection" type="path_basis"/>
+<node name="paper_detection_node" pkg="mine_detection" type="paper_detection"/>
+</launch>
