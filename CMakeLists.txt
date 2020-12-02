@@ -10,6 +10,7 @@ add_compile_options(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -46,11 +47,10 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  Obstacle.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -67,10 +67,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -104,7 +104,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES mine_detection
-#  CATKIN_DEPENDS roscpp std_msgs
+   CATKIN_DEPENDS roscpp std_msgs message_runtime
 #  DEPENDS system_lib
 )
 
@@ -134,6 +134,7 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(path_basis src/path_basis.cpp src/move.cpp src/points_gen.cpp)
 add_executable(gazebo_odom src/gazebo_odom.cpp)
+add_executable(laser src/laser.cpp)
 
 
 ## Rename C++ executable without prefix
@@ -146,6 +147,7 @@ add_executable(gazebo_odom src/gazebo_odom.cpp)
 ## same as for the library above
 add_dependencies(path_basis ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(gazebo_odom ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(laser ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(path_basis
@@ -155,6 +157,9 @@ target_link_libraries(gazebo_odom
   ${catkin_LIBRARIES}
 )
 
+target_link_libraries(laser
+${catkin_LIBRARIES}
+)
 #############
 ## Install ##
 #############
