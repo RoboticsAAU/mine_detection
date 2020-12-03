@@ -6,12 +6,14 @@
 #include <turtlesim/Pose.h>
 #include "geometry_msgs/Point.h"
 #include <nav_msgs/Odometry.h>
+#include <visualization_msgs/Marker.h>
+
 using namespace std;
 
 ros::Publisher point_pub;
 ros::Subscriber sub_pose;
 turtlesim::Pose cur_pose;
-
+int iterationCount = 0;
 class point
 {
 public:
@@ -25,6 +27,9 @@ double degreesToRadians(double angleDegrees);
 point pixelsToMeters(point coordInPixels, double length);
 point rotatePointByAngle(double angle, point coord);
 point convertCoordinatesOfPoint(point Coord);
+visualization_msgs::Marker pointToMark(geometry_msgs::Point markcalc);
+
+visualization_msgs::Marker marker_msg;
 
 int main(int argc, char **argv)
 {
@@ -39,10 +44,10 @@ int main(int argc, char **argv)
 
      ros::init(argc, argv, "paper_detector");
      ros::NodeHandle n;
-     point_pub = n.advertise<geometry_msgs::Point>("/paper/pose", 10);
+     point_pub = n.advertise<geometry_msgs::Point>("/paper_pose", 100); //visualization_msgs::Marker /visualization_marker
      sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
 
-     cv::VideoCapture cap(0); //Capture the video from webcam. 
+     cv::VideoCapture cap(1); //Capture the video from webcam. 
      //If the webcam cannot open, it is likely due to the iindex is wrong, thus it is trying to open a webcam that is not accessible through that index.
 
      if (!cap.isOpened()) //If not success, exit program.
@@ -53,13 +58,13 @@ int main(int argc, char **argv)
 
      cv::namedWindow("Control", CV_WINDOW_AUTOSIZE); //Create a window called "Control".
 
-     int iLowH = 000;
+     int iLowH = 179;
      int iHighH = 179;
 
-     int iLowS = 191;
+     int iLowS = 255;
      int iHighS = 255;
 
-     int iLowV = 185;
+     int iLowV = 255;
      int iHighV = 255;
 
      //Create trackbars in "Control" window.
@@ -148,6 +153,8 @@ int main(int argc, char **argv)
                               geometry_msgs::Point point_msg;
                               point_msg.x = paperPoint.x;
                               point_msg.y = paperPoint.y;
+                              
+                              marker_msg = pointToMark(point_msg);
                               point_pub.publish(point_msg);
                               shouldPublish[i] = false;
                          }
@@ -281,3 +288,41 @@ point convertCoordinatesOfPoint(point Coord)
      return paperPoint;
 } 
 
+visualization_msgs::Marker pointToMark( geometry_msgs::Point markcalc )
+{
+    visualization_msgs::Marker marker;
+    // Set the frame ID and timestamp.  See the TF tutorials for information on these.
+    marker.header.frame_id = "/my_frame";
+    marker.header.stamp = ros::Time::now();
+
+    // Set the namespace and id for this marker.  This serves to create a unique ID
+    // Any marker sent with the same namespace and id will overwrite the old one
+    marker.ns = "paper_pose";
+    marker.id = iterationCount;
+
+    // Set the marker type.  Initially this is CUBE, and cycles between that and SPHERE, ARROW, and CYLINDER
+    marker.type = visualization_msgs::Marker::POINTS;
+
+    // Set the marker action.  Options are ADD, DELETE, and new in ROS Indigo: 3 (DELETEALL)
+    marker.action = visualization_msgs::Marker::ADD;
+
+    // Set the pose of the marker.  This is a full 6DOF pose relative to the frame/time specified in the header
+    marker.pose.position.x = markcalc.x;
+    marker.pose.position.y = markcalc.y;
+  
+
+    // Set the scale of the marker -- 1x1x1 here means 1m on a side
+    marker.scale.x = 0.2;
+    marker.scale.y = 0.2;
+    marker.scale.z = 0.0;
+
+    // Set the color -- be sure to set alpha to something non-zero!
+    marker.color.r = 1.0;
+    marker.color.g = 1.0;
+    marker.color.b = 1.0;
+    marker.color.a = 1.0;
+
+    marker.lifetime = ros::Duration();
+
+    iterationCount++;
+  }

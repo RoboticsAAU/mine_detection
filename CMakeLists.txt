@@ -138,7 +138,6 @@ include_directories(
 add_executable(detection src/detection.cpp)
 add_executable(paper_detection src/paper_detection.cpp)
 add_executable(test_pub src/test_pub.cpp)
-add_executable(pose_reciever src/pose_reciever.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -151,7 +150,6 @@ add_executable(pose_reciever src/pose_reciever.cpp)
 add_dependencies(detection ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(paper_detection ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(test_pub ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(pose_reciever ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(detection
@@ -169,10 +167,6 @@ target_link_libraries(test_pub
   ${OpenCV_LIBS}
 )
 
-target_link_libraries(pose_reciever
-  ${catkin_LIBRARIES}
-  ${OpenCV_LIBS}
-)
 #############
 ## Install ##
 #############
