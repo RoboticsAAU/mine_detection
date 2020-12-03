@@ -168,9 +168,11 @@ target_link_libraries(test_pub
   ${catkin_LIBRARIES}
   ${OpenCV_LIBS}
 )
+
 target_link_libraries(pose_reciever
   ${catkin_LIBRARIES}
   ${OpenCV_LIBS}
+)
 #############
 ## Install ##
 #############
