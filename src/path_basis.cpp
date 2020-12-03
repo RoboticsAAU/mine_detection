@@ -309,23 +309,51 @@ int main(int argc, char *argv[])
             std::cout << std::fixed << std::setprecision(2) << percentage / 195 * 100 << "% cleared." << std::endl;
 
             //create a point from each element.
-            Point p = vec.at(i);
+            Point p = vec[i];
 
             //temp is used to count until a stop points is reached.
             int temp = i;
+
             //if at stop: rotate.
-            if (vec.at(temp).stop || vec.at(temp - 1).stop)
+            if (vec[temp].stop || vec[temp - 1].stop)
             {
                 rotate(p);
             }
+            int count = i;
+            int count2 = i;
+            while (!vec[count2].stop)
+            {
+                if (isInObstacle(vec[count2]))
+                {
+                    while (!isInObstacle(vec[count]) && !vec[count].stop)
+                    {
+                        count++;
+                    };
+                    if (isInObstacle(vec[count]))
+                    {
+                        vec[count - 1].stop = true;
+                    }
+                    while (isInObstacle(vec[count]) && !vec[count].stop)
+                    {
+                        vec[count] = offsetPointInObstacle(vec[count], path_radius, obstacle_odom);
+                        count++;
+                    };
+                    if (isInObstacle(vec[count - 1]))
+                    {
+                        vec[count].stop = true;
+                    }
+                    points_instance.rvizPoints(points_pub, vec);
+                }
+                count2++;
+            }
             //count untill the next stop point.
-            while (!vec.at(temp).stop)
+            while (!vec[temp].stop)
             {
                 temp++;
             }
             //move to the goal, using the next point p, as angular vel,
             //and temp, as the linear vel guide.
-            move2goal(p, vec.at(temp));
+            move2goal(p, vec[temp]);
         }
         std::cout << "Done";
     }
