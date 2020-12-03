@@ -1,7 +1,7 @@
 <launch>
 <include file="$(find turtlebot_bringup)/launch/minimal.launch"/>
-<include file="$(find turtlebot_rviz_launchers)/launch/view_robot.launch"/>
 <remap from="/cmd_vel_mux/input/navi" to="/mobile_base/commands/velocity" />
 <node name="path_basis_node" pkg="mine_detection" type="path_basis"/>
 <node name="paper_detection_node" pkg="mine_detection" type="paper_detection"/>
+ <node name="$(anon rviz)" pkg="rviz" type="rviz" args="-d $(find mine_detection)/config/turtlebot_marker.rviz"/>
 </launch>
