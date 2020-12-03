@@ -133,6 +133,8 @@ void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message)
 Vector2D offset = {0.08, 0.025};
 Vector2D obstacle_odom;
 double radius;
+double contour_offset = 0.2;
+double robot_radius = 0.175;
 void obstacleCallback(const mine_detection::Obstacle::ConstPtr &obs_msg)
 {
     Vector2D obstacle_robot;
@@ -476,8 +478,8 @@ double linear_velocity(Point goal)
 
 double angular_velocity(Point goal)
 {
-    double ka = 2;
-    double max_angular_vel = 0.5;
+    double ka = 2.5;
+    double max_angular_vel = 1.0;
 
     double angular_vel = ka * (getTheta(getAngle(goal)) - getTheta(cur_pose.theta));
 
