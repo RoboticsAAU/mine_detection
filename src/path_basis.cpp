@@ -40,7 +40,7 @@ Vector2D vectorByAngle(double angle);
 double getTheta(double angle);
 void rotate(Point goal);
 void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message);
-visualization_msgs::Marker getRvizPoint(const Vector2D *center, double radius);
+visualization_msgs::Marker getRvizObstacle(const Vector2D *center, double radius);
 double euclidean_distance(double x1, double y1, double x2, double y2);
 double linear_velocity(Point goal);
 double angular_velocity(Point goal);
@@ -145,10 +145,10 @@ void obstacleCallback(const mine_detection::Obstacle::ConstPtr &obs_msg)
     obstacle_odom.y = cur_pose.y + obstacle_robot_rotated.y;
     radius = obs_msg->r;
     std::cout << obstacle_odom.x << " : " << obstacle_odom.y << std::endl;
-    pointPtr->publish(getRvizPoint(&obstacle_odom, obs_msg->r));
+    pointPtr->publish(getRvizObstacle(&obstacle_odom, obs_msg->r));
 }
 
-visualization_msgs::Marker getRvizPoint(const Vector2D *center, double radius)
+visualization_msgs::Marker getRvizObstacle(const Vector2D *center, double radius)
 {
     visualization_msgs::Marker points;
     points.header.frame_id = "/odom";
@@ -180,6 +180,58 @@ visualization_msgs::Marker getRvizPoint(const Vector2D *center, double radius)
     points.points.push_back(point);
 
     return points;
+}
+
+visualization_msgs::Marker singleRvizPoint(Point p)
+{
+    visualization_msgs::Marker points;
+    points.header.frame_id = "/odom";
+    points.ns = "new path namespace";
+    points.action = visualization_msgs::Marker::ADD;
+
+    points.pose.orientation.w = 1.0;
+    points.header.stamp = ros::Time::now();
+
+    points.id = 0;
+
+    points.type = visualization_msgs::Marker::POINTS;
+
+    points.scale.x = 0.2;
+    points.scale.y = 0.2;
+
+    points.color.r = 0.0f;
+    points.color.g = 1.0f;
+    points.color.b = 0.0f;
+    points.color.a = 1.0;
+
+    geometry_msgs::Point point;
+    point.x = p.x;
+    point.y = p.y;
+
+    points.points.push_back(point);
+
+    return points;
+}
+
+Point offsetPointInObstacle(Point path_point, double r, Vector2D obstacle)
+{
+    if (path_point.x > obstacle.x)
+    {
+        double angle = asin((obstacle.y - path_point.y) / r);
+        path_point.x = obstacle.x + r * cos(angle);
+        return path_point;
+    }
+    else
+    {
+        double angle = asin((obstacle.y - path_point.y) / r);
+        path_point.x = obstacle.x + r * (-cos(angle));
+        return path_point;
+    }
+}
+double path_radius = radius + robot_radius + contour_offset;
+bool isInObstacle(Point p)
+{
+    return euclidean_distance(p.x, p.y, obstacle_odom.x, obstacle_odom.y) < path_radius;
 }
 
 int main(int argc, char *argv[])
