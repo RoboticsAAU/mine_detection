@@ -6,6 +6,7 @@
 #include <turtlesim/Pose.h>
 #include "geometry_msgs/Point.h"
 #include <nav_msgs/Odometry.h>
+#include <visualization_msgs/Marker.h>
 using namespace std;
 
 ros::Publisher point_pub;
@@ -39,8 +40,9 @@ int main(int argc, char **argv)
 
      ros::init(argc, argv, "paper_detector");
      ros::NodeHandle n;
-     point_pub = n.advertise<geometry_msgs::Point>("/paper/pose", 10);
-     sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
+     //point_pub = n.advertise<geometry_msgs::Point>("/paper/pose", 10);
+     point_pub = n.advertise<visualization_msgs::Marker>("/paper_pose", 10);
+     sub_pose = n.subscribe("/odom", 1000, &poseCallback);
 
      cv::VideoCapture cap(0); //Capture the video from webcam.
 
