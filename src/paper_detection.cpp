@@ -27,7 +27,7 @@ double degreesToRadians(double angleDegrees);
 point pixelsToMeters(point coordInPixels, double length);
 point rotatePointByAngle(double angle, point coord);
 point convertCoordinatesOfPoint(point Coord);
-visualization_msgs::Marker pointToMark(geometry_msgs::Point markcalc);
+visualization_msgs::Marker pointToMark(point markcalc);
 
 visualization_msgs::Marker marker_msg;
 
@@ -44,10 +44,10 @@ int main(int argc, char **argv)
 
      ros::init(argc, argv, "paper_detector");
      ros::NodeHandle n;
-     point_pub = n.advertise<geometry_msgs::Point>("/paper_pose", 100); //visualization_msgs::Marker /visualization_marker
+     point_pub = n.advertise<visualization_msgs::Marker>("/visualization_marker", 100); //visualization_msgs::Marker /visualization_marker
      sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
 
-     cv::VideoCapture cap(1); //Capture the video from webcam. 
+     cv::VideoCapture cap(0); //Capture the video from webcam. 
      //If the webcam cannot open, it is likely due to the iindex is wrong, thus it is trying to open a webcam that is not accessible through that index.
 
      if (!cap.isOpened()) //If not success, exit program.
@@ -58,13 +58,13 @@ int main(int argc, char **argv)
 
      cv::namedWindow("Control", CV_WINDOW_AUTOSIZE); //Create a window called "Control".
 
-     int iLowH = 179;
+     int iLowH = 170;
      int iHighH = 179;
 
-     int iLowS = 255;
+     int iLowS = 170;
      int iHighS = 255;
 
-     int iLowV = 255;
+     int iLowV = 83;
      int iHighV = 255;
 
      //Create trackbars in "Control" window.
@@ -149,13 +149,11 @@ int main(int argc, char **argv)
 
                          if (centerCoord.x && centerCoord.y != 0 && shouldPublish[i] == true)
                          {
-                              point paperPoint = convertCoordinatesOfPoint(centerCoord);
-                              geometry_msgs::Point point_msg;
-                              point_msg.x = paperPoint.x;
-                              point_msg.y = paperPoint.y;
-                              
-                              marker_msg = pointToMark(point_msg);
-                              point_pub.publish(point_msg);
+                              //point paperPoint = convertCoordinatesOfPoint(centerCoord);
+                              // geometry_msgs::Point point_msg;
+                              // point_msg.x = paperPoint.x;
+                              // point_msg.y = paperPoint.y;
+                              point_pub.publish(pointToMark(convertCoordinatesOfPoint(centerCoord)));
                               shouldPublish[i] = false;
                          }
                     }
@@ -276,32 +274,33 @@ point convertCoordinatesOfPoint(point Coord)
 
      //The found point is rotated to fit with the robots coodinate-system.
      //It is then rotated with the current angle of the robot measured from the x-axis to determine the correct position of the point compared to the robot.
-     point rotatedPoint = rotatePointByAngle(getTheta(cur_pose.theta), coordInMetersToRobotOrigo);
+     point rotatedPoint = rotatePointByAngle(M_PI_2, coordInMetersToRobotOrigo); // if the first argument for rotatePointByAngle is not
+     // getTheta(cur_pose.theta) then it is in test-mode
      //std::cout << "RotatedPoint: " << rotatedPoint.x << " ; " << rotatedPoint.y << "\n";
 
      //The coordinates of the found paper from the robots Origin point.
      //Determined from the coordinates of the robot from its Origin + the vector from the robot centre to the found point.
      
      point paperPoint;
-     paperPoint.x = cur_pose.x + rotatedPoint.x; //cur_pose.x
-     paperPoint.y = cur_pose.y + rotatedPoint.y; //cur_pose.y
+     paperPoint.x = 3 + rotatedPoint.x; //cur_pose.x
+     paperPoint.y = 4 + rotatedPoint.y; //cur_pose.y
      return paperPoint;
 } 
 
-visualization_msgs::Marker pointToMark( geometry_msgs::Point markcalc )
+visualization_msgs::Marker pointToMark( point markcalc )
 {
     visualization_msgs::Marker marker;
     // Set the frame ID and timestamp.  See the TF tutorials for information on these.
     marker.header.frame_id = "/my_frame";
-    marker.header.stamp = ros::Time::now();
+    marker.header.stamp = ros::Time();
 
     // Set the namespace and id for this marker.  This serves to create a unique ID
     // Any marker sent with the same namespace and id will overwrite the old one
     marker.ns = "paper_pose";
-    marker.id = iterationCount;
+    marker.id = 0;
 
     // Set the marker type.  Initially this is CUBE, and cycles between that and SPHERE, ARROW, and CYLINDER
-    marker.type = visualization_msgs::Marker::POINTS;
+    marker.type = visualization_msgs::Marker::CUBE;
 
     // Set the marker action.  Options are ADD, DELETE, and new in ROS Indigo: 3 (DELETEALL)
     marker.action = visualization_msgs::Marker::ADD;
@@ -309,20 +308,22 @@ visualization_msgs::Marker pointToMark( geometry_msgs::Point markcalc )
     // Set the pose of the marker.  This is a full 6DOF pose relative to the frame/time specified in the header
     marker.pose.position.x = markcalc.x;
     marker.pose.position.y = markcalc.y;
-  
+    marker.pose.position.z = 0;
 
+    marker.pose.orientation.w = 1.0;
     // Set the scale of the marker -- 1x1x1 here means 1m on a side
-    marker.scale.x = 0.2;
-    marker.scale.y = 0.2;
-    marker.scale.z = 0.0;
+    marker.scale.x = 0.1;
+    marker.scale.y = 0.1;
+    marker.scale.z = 0.1;
 
     // Set the color -- be sure to set alpha to something non-zero!
     marker.color.r = 1.0;
-    marker.color.g = 1.0;
-    marker.color.b = 1.0;
+    marker.color.g = 0.0;
+    marker.color.b = 0.0;
     marker.color.a = 1.0;
 
-    marker.lifetime = ros::Duration();
+    marker.lifetime = ros::Duration(60);
 
     iterationCount++;
+    return marker;
   }
