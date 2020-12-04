@@ -7,6 +7,7 @@
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/Empty.h>
 #include <visualization_msgs/Marker.h>
+#include "mine_detection/Obstacle.h"
 
 #include <move.h>
 #include <points_gen.h>
@@ -22,6 +23,10 @@ ros::Publisher vel_pub;
 ros::Subscriber sub_pose;
 ros::Publisher points_pub;
 
+ros::Subscriber obstacle_sub;
+
+ros::Publisher *pointPtr;
+
 struct Vector2D
 {
     double x;
@@ -36,6 +41,7 @@ Vector2D vectorByAngle(double angle);
 double getTheta(double angle);
 void rotate(Point goal);
 void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message);
+visualization_msgs::Marker getRvizObstacle(const Vector2D *center, double radius);
 double euclidean_distance(double x1, double y1, double x2, double y2);
 double linear_velocity(Point goal);
 double angular_velocity(Point goal);
@@ -125,15 +131,124 @@ void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message)
     //std::cout << "angle: " << angles.yaw << " x: " << cur_pose.x << " y: " << cur_pose.y << std::endl;
 }
 
+Vector2D offset = {0.08, 0.025};
+Vector2D obstacle_odom;
+double radius;
+double contour_offset = 0.2;
+double robot_radius = 0.175;
+void obstacleCallback(const mine_detection::Obstacle::ConstPtr &obs_msg)
+{
+    Vector2D obstacle_robot;
+    obstacle_robot.x = obs_msg->x - offset.x;
+    obstacle_robot.y = obs_msg->y - offset.y;
+
+    Vector2D obstacle_robot_rotated = rotateVectorByAngle(getTheta(cur_pose.theta), obstacle_robot);
+
+    obstacle_odom.x = cur_pose.x + obstacle_robot_rotated.x;
+    obstacle_odom.y = cur_pose.y + obstacle_robot_rotated.y;
+    radius = obs_msg->r;
+    std::cout << obstacle_odom.x << " : " << obstacle_odom.y << std::endl;
+    pointPtr->publish(getRvizObstacle(&obstacle_odom, obs_msg->r));
+}
+
+visualization_msgs::Marker getRvizObstacle(const Vector2D *center, double radius)
+{
+    visualization_msgs::Marker points;
+    points.header.frame_id = "/odom";
+    points.ns = "obstacle namespace";
+    points.action = visualization_msgs::Marker::ADD;
+
+    points.pose.orientation.w = 1.0;
+    points.header.stamp = ros::Time::now();
+
+    points.id = 0;
+
+    points.type = visualization_msgs::Marker::CYLINDER;
+
+    points.scale.x = radius * 2;
+    points.scale.y = radius * 2;
+    points.scale.z = 0.5;
+
+    points.color.r = 1.0f;
+    points.color.g = 1.0f;
+    points.color.b = 1.0f;
+    points.color.a = 1.0;
+
+    geometry_msgs::Point point;
+    point.x = (*center).x;
+    point.y = (*center).y;
+
+    points.pose.position.x = (*center).x;
+    points.pose.position.y = (*center).y;
+    points.points.push_back(point);
+
+    return points;
+}
+
+visualization_msgs::Marker singleRvizPoint(Point p)
+{
+    visualization_msgs::Marker points;
+    points.header.frame_id = "/odom";
+    points.ns = "new path namespace";
+    points.action = visualization_msgs::Marker::ADD;
+
+    points.pose.orientation.w = 1.0;
+    points.header.stamp = ros::Time::now();
+
+    points.id = 0;
+
+    points.type = visualization_msgs::Marker::POINTS;
+
+    points.scale.x = 0.2;
+    points.scale.y = 0.2;
+
+    points.color.r = 0.0f;
+    points.color.g = 1.0f;
+    points.color.b = 0.0f;
+    points.color.a = 1.0;
+
+    geometry_msgs::Point point;
+    point.x = p.x;
+    point.y = p.y;
+
+    points.points.push_back(point);
+
+    return points;
+}
+
+Point offsetPointInObstacle(Point path_point, double r, Vector2D obstacle)
+{
+    if (path_point.x > obstacle.x)
+    {
+        double angle = asin((obstacle.y - path_point.y) / r);
+        path_point.x = obstacle.x + r * cos(angle);
+        return path_point;
+    }
+    else
+    {
+        double angle = asin((obstacle.y - path_point.y) / r);
+        path_point.x = obstacle.x + r * (-cos(angle));
+        return path_point;
+    }
+}
+double path_radius = radius + robot_radius + contour_offset;
+bool isInObstacle(Point p)
+{
+    return euclidean_distance(p.x, p.y, obstacle_odom.x, obstacle_odom.y) < path_radius;
+}
+
 int main(int argc, char *argv[])
 {
     ros::init(argc, argv, "mine_detection_path_planning");
     ros::NodeHandle n;
 
+    points_pub = n.advertise<visualization_msgs::Marker>("/visualization_marker", 200);
     reset_pub = n.advertise<std_msgs::Empty>("/mobile_base/commands/reset_odometry", 10);
     vel_pub = n.advertise<geometry_msgs::Twist>("/cmd_vel_mux/input/navi", 10);
     sub_pose = n.subscribe("/odom", 1000, &poseCallback);
-    points_pub = n.advertise<visualization_msgs::Marker>("/visualization_marker", 200);
+    obstacle_sub = n.subscribe("/obstacle", 10, &obstacleCallback);
+
+    pointPtr = &points_pub;
 
     ROS_INFO("Resetting odometry...");
     while (reset_pub.getNumSubscribers() == 0)
@@ -197,23 +312,51 @@ int main(int argc, char *argv[])
             std::cout << std::fixed << std::setprecision(2) << percentage / 195 * 100 << "% cleared." << std::endl;
 
             //create a point from each element.
-            Point p = vec.at(i);
+            Point p = vec[i];
 
             //temp is used to count until a stop points is reached.
             int temp = i;
+
             //if at stop: rotate.
-            if (vec.at(temp).stop || vec.at(temp - 1).stop)
+            if (vec[temp].stop || vec[temp - 1].stop)
             {
                 rotate(p);
             }
+            int count = i;
+            int count2 = i;
+            while (!vec[count2].stop)
+            {
+                if (isInObstacle(vec[count2]))
+                {
+                    while (!isInObstacle(vec[count]) && !vec[count].stop)
+                    {
+                        count++;
+                    };
+                    if (isInObstacle(vec[count]))
+                    {
+                        vec[count - 1].stop = true;
+                    }
+                    while (isInObstacle(vec[count]) && !vec[count].stop)
+                    {
+                        vec[count] = offsetPointInObstacle(vec[count], path_radius, obstacle_odom);
+                        count++;
+                    };
+                    if (isInObstacle(vec[count - 1]))
+                    {
+                        vec[count].stop = true;
+                    }
+                    points_instance.rvizPoints(points_pub, vec);
+                }
+                count2++;
+            }
             //count untill the next stop point.
-            while (!vec.at(temp).stop)
+            while (!vec[temp].stop)
             {
                 temp++;
             }
             //move to the goal, using the next point p, as angular vel,
             //and temp, as the linear vel guide.
-            move2goal(p, vec.at(temp));
+            move2goal(p, vec[temp]);
         }
         std::cout << "Done";
     }
@@ -287,8 +430,8 @@ bool IsClockwise(double angleActual, double angleDesired)
     Vector2D vectorActual = vectorByAngle(angleActual);
     Vector2D vectorDesired = vectorByAngle(angleDesired);
 
-    Vector2D rotatedVectorActual = rotateVectorByAngle(angleActual, vectorActual);
-    Vector2D rotatedVectorDesired = rotateVectorByAngle(angleActual, vectorDesired);
+    Vector2D rotatedVectorActual = rotateVectorByAngle(2 * M_PI - angleActual, vectorActual);
+    Vector2D rotatedVectorDesired = rotateVectorByAngle(2 * M_PI - angleActual, vectorDesired);
 
     return !VectorInUpperQuadrants(rotatedVectorDesired);
 }
@@ -304,10 +447,11 @@ bool VectorInUpperQuadrants(Vector2D vector)
 Vector2D rotateVectorByAngle(double angle, Vector2D vector)
 {
     Vector2D rotatedVector;
-    rotatedVector.x = vector.x * cos(2 * M_PI - angle) + vector.y * (-sin(2 * M_PI - angle));
-    rotatedVector.y = vector.x * sin(2 * M_PI - angle) + vector.y * cos(2 * M_PI - angle);
+    rotatedVector.x = vector.x * cos(angle) + vector.y * (-sin(angle));
+    rotatedVector.y = vector.x * sin(angle) + vector.y * cos(angle);
     return rotatedVector;
 }
+#pragma endregion
 
 // The function takes in an angle and makes it into a unit vector.
 Vector2D vectorByAngle(double angle)
@@ -327,7 +471,7 @@ double euclidean_distance(double x1, double y1, double x2, double y2)
 double linear_velocity(Point goal)
 {
     double kv = 0.5;
-    double max_linear_vel = 0.3;
+    double max_linear_vel = 0.2;
 
     double linear_vel = kv * euclidean_distance(cur_pose.x, cur_pose.y, goal.x, goal.y);
 
@@ -336,8 +480,8 @@ double linear_velocity(Point goal)
 
 double angular_velocity(Point goal)
 {
-    double ka = 2;
-    double max_angular_vel = 0.5;
+    double ka = 2.5;
+    double max_angular_vel = 1.0;
 
     double angular_vel = ka * (getTheta(getAngle(goal)) - getTheta(cur_pose.theta));
 

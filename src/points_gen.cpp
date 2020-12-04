@@ -16,7 +16,7 @@ std::vector<Point> points_List::gen_Point_list()
     double m = 5.0;
     double n = 5.0;
     //Distance between points
-    double point_distance = 0.05;
+    double point_distance = 0.1;
     //robot radius in meters
     double robot_radius = 0.175;
     //count used to generate the points in the correct order.
@@ -29,7 +29,7 @@ std::vector<Point> points_List::gen_Point_list()
         if (count % 2 == 0)
         {
             //iterate through the field in correct assending order.
-            for (double j = robot_radius; j < n; j += point_distance)
+            for (double j = robot_radius; j < n - robot_radius; j += point_distance)
             {
                 //create a point.
                 Point p = {i, j};
@@ -45,7 +45,7 @@ std::vector<Point> points_List::gen_Point_list()
         else
         {
             //if count is uneven, itterate through in dessending order.
-            for (double j = n - robot_radius; j > 0; j -= point_distance)
+            for (double j = n - robot_radius; j > 0 + robot_radius; j -= point_distance)
             {
                 //create a point.
                 Point p = {i, j};
@@ -76,7 +76,7 @@ void points_List::rvizPoints(ros::Publisher point_pub, std::vector<Point> point_
     //The default marker message members are 0.
     //frame id has to be the same as the robots position topic.
     points.header.frame_id = line_strip.header.frame_id = "/odom";
-    points.ns = line_strip.ns = "points namespace";
+    points.ns = line_strip.ns = "Path namespace";
     points.action = line_strip.action = visualization_msgs::Marker::ADD;
 
     //w must be a non-zero value to be displayed.
