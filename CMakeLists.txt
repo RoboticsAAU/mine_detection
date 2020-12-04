@@ -11,8 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   message_generation
-  OpenCV
   )
+find_package(OpenCV)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -163,6 +163,7 @@ target_link_libraries(gazebo_odom
 )
 target_link_libraries(paper_detection
 ${catkin_LIBRARIES}
+${OpenCV_LIBS}
 )
 
 target_link_libraries(laser
