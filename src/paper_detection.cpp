@@ -88,7 +88,7 @@ int main(int argc, char **argv)
      point_pub = n.advertise<visualization_msgs::Marker>("/visualization_marker", 100); //visualization_msgs::Marker /visualization_marker
      sub_pose = n.subscribe("/odom", 100, &poseCallback);
 
-     cv::VideoCapture cap(0); //Capture the video from webcam.
+     cv::VideoCapture cap(1); //Capture the video from webcam.
      //If the webcam cannot open, it is likely due to the iindex is wrong, thus it is trying to open a webcam that is not accessible through that index.
 
      if (!cap.isOpened()) //If not success, exit program.
