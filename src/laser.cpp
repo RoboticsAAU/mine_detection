@@ -27,6 +27,7 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr &laser_msg)
     int count = 0;
     bool isInRangeRight;
     bool isInRangeLeft;
+    double range = 1.5;
     points.clear();
     points.shrink_to_fit();
     //std::cout << "New array:" << std::endl;
@@ -37,10 +38,10 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr &laser_msg)
         if (!std::isnan(laser_msg->ranges.at(i)))
         {
             //std::cout << "Callback" << std::endl;
-            if (laser_msg->range_min < laser_msg->ranges[i] && laser_msg->ranges[i] < 1)
+            if (laser_msg->range_min < laser_msg->ranges[i] && laser_msg->ranges[i] < range)
             {
-                isInRangeRight = (laser_msg->range_min < laser_msg->ranges[0] && laser_msg->ranges[0] < 1);
-                isInRangeLeft = (laser_msg->range_min < laser_msg->ranges[laser_msg->ranges.size() - 1] && laser_msg->ranges[laser_msg->ranges.size() - 1] < 1);
+                isInRangeRight = (laser_msg->range_min < laser_msg->ranges[0] && laser_msg->ranges[0] < range);
+                isInRangeLeft = (laser_msg->range_min < laser_msg->ranges[laser_msg->ranges.size() - 1] && laser_msg->ranges[laser_msg->ranges.size() - 1] < range);
                 if (!isInRangeRight && !isInRangeLeft)
                 {
                     //std::cout << laser_msg->ranges.at(i) << std::endl;
