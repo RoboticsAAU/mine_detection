@@ -140,7 +140,7 @@ int main(int argc, char **argv)
                if (surfacedif > surflimit) //if bounding rectangle is smaller than last frame save coordinated of bounding rectangle
                {
                     rectCenter[i] = {boundbox[i].x + (boundbox[i].width / 2), boundbox[i].y + (boundbox[i].height / 2)};
-                    ;
+
                     for (size_t i = 0; i < rectCenter.size(); i++)
                     {
                          point centerCoord;
