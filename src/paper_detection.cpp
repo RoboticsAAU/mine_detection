@@ -99,13 +99,13 @@ int main(int argc, char **argv)
 
      cv::namedWindow("Control", CV_WINDOW_AUTOSIZE); //Create a window called "Control".
 
-     int iLowH = 140;
-     int iHighH = 160;
+     int iLowH = 0;
+     int iHighH = 179;
 
      int iLowS = 170;
      int iHighS = 255;
 
-     int iLowV = 83;
+     int iLowV = 150;
      int iHighV = 255;
 
      //Create trackbars in "Control" window.
