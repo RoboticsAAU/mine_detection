@@ -22,7 +22,7 @@ public:
 };
 
 double getTheta(double angle);
-void poseCallback(const turtlesim::Pose::ConstPtr &pose_message);
+void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message);
 double degreesToRadians(double angleDegrees);
 point pixelsToMeters(point coordInPixels, double length);
 point rotatePointByAngle(double angle, point coord);
@@ -30,6 +30,47 @@ point convertCoordinatesOfPoint(point Coord);
 visualization_msgs::Marker pointToMark(point markcalc);
 
 visualization_msgs::Marker marker_msg;
+
+#pragma region Quaternion To Euler Angles conversion
+struct Quaternion
+{
+     double x, y, z, w;
+};
+
+struct EulerAngles
+{
+     double roll, pitch, yaw;
+};
+
+EulerAngles angles;
+
+//convert quarternion into eulerangles.
+EulerAngles ToEulerAngles(Quaternion q)
+{
+     EulerAngles angles;
+
+     //roll (x axis rotation)
+     double sinr_cosp = 2 * (q.w * q.x - q.y * q.z);
+     double cosr_cosp = 1 - 2 * (q.x * q.x + q.y * q.y);
+     angles.roll = atan2(sinr_cosp, cosr_cosp);
+
+     //pitch (y axis rotation)
+     double sinp = 2 * (q.w * q.y - q.z * q.x);
+     if (abs(sinp) >= 1)
+          //copysign returns the magnitude of M_PI/2 with the sign of sinp
+          angles.pitch = copysign(M_PI / 2, sinp); // use 90 degrees if out of range
+     else
+          angles.pitch = asin(sinp);
+
+     // yaw (z-axis rotation)
+     double siny_cosp = 2 * (q.w * q.z + q.x * q.y);
+     double cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
+     //calculate yaw, and make the yaw angle be 0 < yaw < 2pi.
+     angles.yaw = std::atan2(siny_cosp, cosy_cosp);
+
+     return angles;
+}
+#pragma endregion
 
 int main(int argc, char **argv)
 {
@@ -45,7 +86,7 @@ int main(int argc, char **argv)
      ros::init(argc, argv, "paper_detector");
      ros::NodeHandle n;
      point_pub = n.advertise<visualization_msgs::Marker>("/visualization_marker", 100); //visualization_msgs::Marker /visualization_marker
-     sub_pose = n.subscribe("/turtle1/pose", 10, &poseCallback);
+     sub_pose = n.subscribe("/odom", 100, &poseCallback);
 
      cv::VideoCapture cap(0); //Capture the video from webcam.
      //If the webcam cannot open, it is likely due to the iindex is wrong, thus it is trying to open a webcam that is not accessible through that index.
@@ -58,8 +99,8 @@ int main(int argc, char **argv)
 
      cv::namedWindow("Control", CV_WINDOW_AUTOSIZE); //Create a window called "Control".
 
-     int iLowH = 170;
-     int iHighH = 179;
+     int iLowH = 140;
+     int iHighH = 160;
 
      int iLowS = 170;
      int iHighS = 255;
@@ -79,6 +120,8 @@ int main(int argc, char **argv)
 
      while (ros::ok())
      {
+          ros::spinOnce(); //process odom callback.
+
           cv::Mat imgOriginal;
 
           bool bSuccess = cap.read(imgOriginal); //Read a new frame from video.
@@ -176,11 +219,27 @@ int main(int argc, char **argv)
 }
 
 //Everytime a message arrives, this function is called. It updates the robots coordinates and its orientation.
-void poseCallback(const turtlesim::Pose::ConstPtr &pose_message)
+void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message)
 {
-     cur_pose.x = pose_message->x;
-     cur_pose.y = pose_message->y;
-     cur_pose.theta = pose_message->theta;
+     //std::cout << "Callback" << std::endl;
+     // Get the x,y position.
+     cur_pose.x = pose_message->pose.pose.position.x;
+     cur_pose.y = pose_message->pose.pose.position.y;
+
+     // Quaternion object q.
+     Quaternion q;
+
+     // Assign values of pose message to quaternion.
+     q.x = pose_message->pose.pose.orientation.x;
+     q.y = pose_message->pose.pose.orientation.y;
+     q.z = pose_message->pose.pose.orientation.z;
+     q.w = pose_message->pose.pose.orientation.w;
+
+     // Retrieve Euler angles from quaternion pose message.
+     angles = ToEulerAngles(q);
+
+     cur_pose.theta = angles.yaw;
+     //std::cout << "Recieved point: " << cur_pose.x << " : " << cur_pose.y << " - angle: " << cur_pose.theta << std::endl;
 }
 
 double getTheta(double angle)
@@ -268,7 +327,7 @@ point convertCoordinatesOfPoint(point Coord)
 
      //The found point is rotated to fit with the robots coodinate-system.
      //It is then rotated with the current angle of the robot measured from the x-axis to determine the correct position of the point compared to the robot.
-     point rotatedPoint = rotatePointByAngle(M_PI_2, coordInMetersToRobotOrigo); // if the first argument for rotatePointByAngle is not
+     point rotatedPoint = rotatePointByAngle(getTheta(cur_pose.theta), coordInMetersToRobotOrigo); // if the first argument for rotatePointByAngle is not
      // getTheta(cur_pose.theta) then it is in test-mode
      //std::cout << "RotatedPoint: " << rotatedPoint.x << " ; " << rotatedPoint.y << "\n";
 
@@ -276,8 +335,8 @@ point convertCoordinatesOfPoint(point Coord)
      //Determined from the coordinates of the robot from its Origin + the vector from the robot centre to the found point.
 
      point paperPoint;
-     paperPoint.x = 3 + rotatedPoint.x; //cur_pose.x
-     paperPoint.y = 4 + rotatedPoint.y; //cur_pose.y
+     paperPoint.x = cur_pose.x + rotatedPoint.x; //cur_pose.x
+     paperPoint.y = cur_pose.y + rotatedPoint.y; //cur_pose.y
      return paperPoint;
 }
 
@@ -291,7 +350,7 @@ visualization_msgs::Marker pointToMark(point markcalc)
      // Set the namespace and id for this marker.  This serves to create a unique ID
      // Any marker sent with the same namespace and id will overwrite the old one
      marker.ns = "paper_pose";
-     marker.id = 0;
+     marker.id = iterationCount;
 
      // Set the marker type.  Initially this is CUBE, and cycles between that and SPHERE, ARROW, and CYLINDER
      marker.type = visualization_msgs::Marker::CUBE;
@@ -316,7 +375,7 @@ visualization_msgs::Marker pointToMark(point markcalc)
      marker.color.b = 0.0;
      marker.color.a = 1.0;
 
-     marker.lifetime = ros::Duration(60);
+     marker.lifetime = ros::Duration();
 
      iterationCount++;
      return marker;
