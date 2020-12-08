@@ -13,8 +13,8 @@ std::vector<Point> points_List::gen_Point_list()
 
     //m is length
     //n is width
-    double x = 5.0; //m
-    double y = 5.0; //n
+    double x = 3.0; //m
+    double y = 2.9; //n
     //Distance between points
     double point_distance = 0.1;
     //robot radius in meters
@@ -45,12 +45,12 @@ std::vector<Point> points_List::gen_Point_list()
         else
         {
             //if count is uneven, itterate through in dessending order.
-            for (double j = n - robot_radius; j > 0 + robot_radius; j -= point_distance)
+            for (double j = y - robot_radius; j > 0 + robot_radius; j -= point_distance)
             {
                 //create a point.
                 Point p = {i, j};
                 //if the first point in iteration, set stop to true.
-                if (j == n - robot_radius)
+                if (j == y - robot_radius)
                 {
                     p.stop = true;
                 }

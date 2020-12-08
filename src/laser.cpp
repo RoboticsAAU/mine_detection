@@ -40,18 +40,18 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr &laser_msg)
             //std::cout << "Callback" << std::endl;
             if (laser_msg->range_min < laser_msg->ranges[i] && laser_msg->ranges[i] < range)
             {
-                isInRangeRight = (laser_msg->range_min < laser_msg->ranges[0] && laser_msg->ranges[0] < range);
-                isInRangeLeft = (laser_msg->range_min < laser_msg->ranges[laser_msg->ranges.size() - 1] && laser_msg->ranges[laser_msg->ranges.size() - 1] < range);
-                if (!isInRangeRight && !isInRangeLeft)
-                {
-                    //std::cout << laser_msg->ranges.at(i) << std::endl;
-                    Point p;
-                    //calculate the cartesian coordinates.
-                    p.x = laser_msg->ranges[i] * cos(angle);
-                    p.y = laser_msg->ranges[i] * sin(angle);
-                    //std::cout << p.x << " : " << p.y << std::endl;
-                    points.push_back(p);
-                }
+                //isInRangeRight = (laser_msg->range_min < laser_msg->ranges[0] && laser_msg->ranges[0] < range);
+                //isInRangeLeft = (laser_msg->range_min < laser_msg->ranges[laser_msg->ranges.size() - 1] && laser_msg->ranges[laser_msg->ranges.size() - 1] < range);
+                //if (!isInRangeRight && !isInRangeLeft)
+                //{
+                //std::cout << laser_msg->ranges.at(i) << std::endl;
+                Point p;
+                //calculate the cartesian coordinates.
+                p.x = laser_msg->ranges[i] * cos(angle);
+                p.y = laser_msg->ranges[i] * sin(angle);
+                //std::cout << p.x << " : " << p.y << std::endl;
+                points.push_back(p);
+                //}
             }
         }
     }
