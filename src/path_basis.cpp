@@ -8,7 +8,6 @@
 #include <std_msgs/Empty.h>
 #include <visualization_msgs/Marker.h>
 #include "mine_detection/Obstacle.h"
-
 #include <move.h>
 #include <points_gen.h>
 
@@ -48,7 +47,7 @@ double angular_velocity(Point goal);
 double getAngle(Point goal);
 void move2goal(Point goal, Point stop_goal);
 
-const double distance_tolerance = 0.05;
+const double distance_tolerance = 0.10;
 
 turtlesim::Pose cur_pose;
 

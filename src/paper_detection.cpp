@@ -7,10 +7,14 @@
 #include "geometry_msgs/Point.h"
 #include <nav_msgs/Odometry.h>
 #include <visualization_msgs/Marker.h>
+#include <kobuki_msgs/Led.h>
+#include <std_msgs/Empty.h>
+#include <yocs_controllers/default_controller.hpp>
 
 using namespace std;
 
 ros::Publisher point_pub;
+//ros::Publisher led_pub;
 ros::Subscriber sub_pose;
 turtlesim::Pose cur_pose;
 int iterationCount = 0;
@@ -86,9 +90,10 @@ int main(int argc, char **argv)
      ros::init(argc, argv, "paper_detector");
      ros::NodeHandle n;
      point_pub = n.advertise<visualization_msgs::Marker>("/visualization_marker", 100); //visualization_msgs::Marker /visualization_marker
+     //led_pub = n.advertise<kobuki_msgs::Led>("/commands/led1", 10); //visualization_msgs::Marker /visualization_marker
      sub_pose = n.subscribe("/odom", 100, &poseCallback);
 
-     cv::VideoCapture cap(1); //Capture the video from webcam.
+     cv::VideoCapture cap(0); //Capture the video from webcam.
      //If the webcam cannot open, it is likely due to the iindex is wrong, thus it is trying to open a webcam that is not accessible through that index.
 
      if (!cap.isOpened()) //If not success, exit program.
@@ -197,7 +202,13 @@ int main(int argc, char **argv)
                               // point_msg.x = paperPoint.x;
                               // point_msg.y = paperPoint.y;
                               point_pub.publish(pointToMark(convertCoordinatesOfPoint(centerCoord)));
-                              shouldPublish[i] = false;
+                              /*
+                              kobuki_msgs::LedPtr led_msg_ptr;
+                              led_msg_ptr.reset(new kobuki_msgs::Led());
+                              led_msg_ptr->value = kobuki_msgs::Led::RED;
+                              led_pub.publish(led_msg_ptr);
+                              */
+                              //shouldPublish[i] = false;
                          }
                     }
                }
@@ -367,7 +378,7 @@ visualization_msgs::Marker pointToMark(point markcalc)
      // Set the scale of the marker -- 1x1x1 here means 1m on a side
      marker.scale.x = 0.1;
      marker.scale.y = 0.1;
-     marker.scale.z = 0.1;
+     marker.scale.z = 0.01;
 
      // Set the color -- be sure to set alpha to something non-zero!
      marker.color.r = 1.0;
