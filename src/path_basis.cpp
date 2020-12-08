@@ -133,8 +133,8 @@ void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message)
 Vector2D offset = {0.08, 0.025};
 Vector2D obstacle_odom;
 double radius;
-double contour_offset = 0.2;
-double robot_radius = 0.175;
+double contour_offset = 0.25; //offset in meters
+double robot_radius = 0.175;  //robot radius in meters
 void obstacleCallback(const mine_detection::Obstacle::ConstPtr &obs_msg)
 {
     Vector2D obstacle_robot;
