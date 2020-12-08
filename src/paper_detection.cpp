@@ -42,6 +42,9 @@ int main(int argc, char **argv)
      int upperLimitOfdecrease = 100; // this defines the upper limit for the change of the size of the bounding boxes
      int surfacedif;
 
+     cv::Mat uppermask;
+     cv::Mat lowermask;
+
      ros::init(argc, argv, "paper_detector");
      ros::NodeHandle n;
      point_pub = n.advertise<visualization_msgs::Marker>("/visualization_marker", 100); //visualization_msgs::Marker /visualization_marker
@@ -92,7 +95,14 @@ int main(int argc, char **argv)
           cv::Mat imgHSV;
           cvtColor(imgOriginal, imgHSV, cv::COLOR_BGR2HSV); //Convert the captured frame from BGR to HSV.
           cv::Mat imgThresholded;
-          cv::inRange(imgHSV, cv::Scalar(iLowH, iLowS, iLowV), cv::Scalar(iHighH, iHighS, iHighV), imgThresholded); //Threshold the image.
+
+          if(iLowH > iHighH)
+          {
+               cv::inRange(imgHSV, cv::Scalar(0, iLowS, iLowV), cv::Scalar(iHighH, iHighS, iHighV), lowermask);
+               cv::inRange(imgHSV, cv::Scalar(iLowH, iLowS, iLowV), cv::Scalar(179, iHighS, iHighV), uppermask);
+               imgThresholded = lowermask | uppermask;
+          }          
+          else cv::inRange(imgHSV, cv::Scalar(iLowH, iLowS, iLowV), cv::Scalar(iHighH, iHighS, iHighV), imgThresholded); //Threshold the image.
 
           //Morphological opening (removes small objects from the foreground).
           erode(imgThresholded, imgThresholded, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
