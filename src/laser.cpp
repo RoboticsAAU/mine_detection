@@ -28,6 +28,7 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr &laser_msg)
     bool isInRangeRight;
     bool isInRangeLeft;
     double range = 1.5;
+
     points.clear();
     points.shrink_to_fit();
     //std::cout << "New array:" << std::endl;
@@ -116,7 +117,10 @@ int main(int argc, char *argv[])
             radius = obstacleRadius(center, points[0]);
             obstacle_msg.r = radius;
 
-            obstacle_pub.publish(obstacle_msg);
+            if (radius < 0.35)
+                {
+                    obstacle_pub.publish(obstacle_msg);
+                }
         }
         loop_rate.sleep();
     }
