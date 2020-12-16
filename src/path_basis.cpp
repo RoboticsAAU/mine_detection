@@ -217,15 +217,16 @@ visualization_msgs::Marker singleRvizPoint(Point p)
 
 Point offsetPointInObstacle(Point path_point, double r, Vector2D obstacle)
 {
+    double angle = asin((obstacle.y - path_point.y) / r); //I have put this line up here, it was before the pathpoint calculation in line 224, like it is in the else-statement.
     if (path_point.x > obstacle.x)
     {
-        double angle = asin((obstacle.y - path_point.y) / r);
+        
         path_point.x = obstacle.x + r * cos(angle);
         return path_point;
     }
     else
     {
-        double angle = asin((obstacle.y - path_point.y) / r);
+        //double angle = asin((obstacle.y - path_point.y) / r);
         path_point.x = obstacle.x + r * (-cos(angle));
         return path_point;
     }

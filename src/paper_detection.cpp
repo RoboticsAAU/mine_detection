@@ -175,7 +175,7 @@ int main(int argc, char **argv)
           imshow("Original", imgOriginal);             //show the original image
 
           vector<cv::Point> rectCenter(boundbox.size()); //current boundingbox center coordinates
-          shouldPublish.resize(rectCenter.size(), true);
+          //shouldPublish.resize(rectCenter.size(), true);
           //for (int j = 0; j =< rectCenter.size(); j++)
           //cout << " "
           vector<int> rectSurface(boundbox.size()); //surface area of boundingbox last frame
@@ -197,18 +197,7 @@ int main(int argc, char **argv)
 
                          if (centerCoord.x && centerCoord.y != 0 && shouldPublish[i] == true)
                          {
-                              //point paperPoint = convertCoordinatesOfPoint(centerCoord);
-                              // geometry_msgs::Point point_msg;
-                              // point_msg.x = paperPoint.x;
-                              // point_msg.y = paperPoint.y;
                               point_pub.publish(pointToMark(convertCoordinatesOfPoint(centerCoord)));
-                              /*
-                              kobuki_msgs::LedPtr led_msg_ptr;
-                              led_msg_ptr.reset(new kobuki_msgs::Led());
-                              led_msg_ptr->value = kobuki_msgs::Led::RED;
-                              led_pub.publish(led_msg_ptr);
-                              */
-                              //shouldPublish[i] = false;
                          }
                     }
                }
