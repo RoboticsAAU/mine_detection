@@ -1,0 +1,4 @@
+<launch>
+<include file="$(find turtlebot_bringup)/launch/minimal.launch"/>
+<node name="path_basis_node" pkg="mine_detection" type="path_basis"/>
+</launch>

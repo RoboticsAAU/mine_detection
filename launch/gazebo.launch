@@ -1,0 +1,6 @@
+
+<launch>
+<include file="$(find turtlebot_gazebo)/launch/turtlebot_world.launch"/>
+<remap from="/cmd_vel_mux/input/navi" to="/cmd_vel_mux/input/navi" />
+<node name="path_basis_node" pkg="mine_detection" type="path_basis"/>
+</launch>
