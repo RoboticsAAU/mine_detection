@@ -7,7 +7,10 @@
   <!-- Maintainers: -->
   <maintainer email="vrisag20@student.aau.dk">Victor Risager</maintainer>
   <maintainer email="jbla20@student.aau.dk">Jakob Bøgh Larsen</maintainer>
+  <maintainer email="anie20@student.aau.dk">Alexander Foergaard Nielsen</maintainer>
   <maintainer email="jolars20@student.aau.dk">Johannes Bach Larsen</maintainer>
+  <maintainer email="sschot20@student.aau.dk">Simone Maria Schotte</maintainer>
+  <maintainer email="lpeder20@student.aau.dk">Line Micha Pedersen</maintainer>
   <!-- osv osv -->
 
   <license>MIT</license>
@@ -25,6 +28,9 @@
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>message_runtime</exec_depend>
 
+  <build_depend>message_generation</build_depend>
+  <exec_depend>message_runtime</exec_depend>
+  <build_export_depend>message_runtime</build_export_depend>
 
   <export>
 

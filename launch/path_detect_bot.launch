@@ -1,0 +1,10 @@
+<launch>
+    <include file="$(find turtlebot_bringup)/launch/minimal.launch"/>
+    <include file="$(find turtlebot_bringup)/launch/3dsensor.launch"/>
+    <remap from="/cmd_vel_mux/input/navi" to="/mobile_base/commands/velocity"/>
+    <arg name="node_start_delay" default="1.0" />  
+        <node name="path_basis_node" pkg="mine_detection" type="path_basis" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
+        <node name="paper_detection_node" pkg="mine_detection" type="paper_detection" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
+        <node name="laser" pkg="mine_detection" type="laser" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
+        <node name="$(anon rviz)" pkg="rviz" type="rviz" args="-d $(find mine_detection)/config/turtlebot_marker.rviz" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' " />
+</launch>
