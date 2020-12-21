@@ -142,13 +142,14 @@ int main(int argc, char **argv)
           cvtColor(imgOriginal, imgHSV, cv::COLOR_BGR2HSV); //Convert the captured frame from BGR to HSV.
           cv::Mat imgThresholded;
 
-          if(iLowH > iHighH)
+          if (iLowH > iHighH)
           {
                cv::inRange(imgHSV, cv::Scalar(0, iLowS, iLowV), cv::Scalar(iHighH, iHighS, iHighV), lowermask);
                cv::inRange(imgHSV, cv::Scalar(iLowH, iLowS, iLowV), cv::Scalar(179, iHighS, iHighV), uppermask);
                imgThresholded = lowermask | uppermask;
-          }          
-          else cv::inRange(imgHSV, cv::Scalar(iLowH, iLowS, iLowV), cv::Scalar(iHighH, iHighS, iHighV), imgThresholded); //Threshold the image.
+          }
+          else
+               cv::inRange(imgHSV, cv::Scalar(iLowH, iLowS, iLowV), cv::Scalar(iHighH, iHighS, iHighV), imgThresholded); //Threshold the image.
 
           //Morphological opening (removes small objects from the foreground).
           erode(imgThresholded, imgThresholded, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
@@ -392,7 +393,7 @@ visualization_msgs::Marker pointToMark(point markcalc)
      marker.color.b = 0.0;
      marker.color.a = 1.0;
 
-     marker.lifetime = ros::Duration(); //This makes 
+     marker.lifetime = ros::Duration(); //This makes
 
      iterationCount++;
      return marker;
