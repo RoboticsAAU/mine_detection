@@ -199,11 +199,7 @@ int main(int argc, char **argv)
                          }
                     }
                }
-               //if(i > 2 && rectsurf[i-2]<rectsurf[i-1]>rectsurf[i])
-               /*if (surfacedif < surflimit)
-               {
-               shouldPublish[i] = false;
-               }*/
+               
                lastRectSurface[i] = rectSurface[i];
           }
 
