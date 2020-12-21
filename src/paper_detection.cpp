@@ -85,6 +85,9 @@ int main(int argc, char **argv)
      int upperLimitOfdecrease = 100; // this defines the upper limit for the change of the size of the bounding boxes
      int surfacedif;
 
+     cv::Mat uppermask;
+     cv::Mat lowermask;
+
      ros::init(argc, argv, "paper_detector");
      ros::NodeHandle n;
      point_pub = n.advertise<visualization_msgs::Marker>("/visualization_marker", 100); //visualization_msgs::Marker /visualization_marker
@@ -102,13 +105,13 @@ int main(int argc, char **argv)
 
      cv::namedWindow("Control", CV_WINDOW_AUTOSIZE); //Create a window called "Control".
 
-     int iLowH = 0;
+     int iLowH = 170;
      int iHighH = 179;
 
      int iLowS = 170;
      int iHighS = 255;
 
-     int iLowV = 150;
+     int iLowV = 83;
      int iHighV = 255;
 
      //Create trackbars in "Control" window.
@@ -138,7 +141,14 @@ int main(int argc, char **argv)
           cv::Mat imgHSV;
           cvtColor(imgOriginal, imgHSV, cv::COLOR_BGR2HSV); //Convert the captured frame from BGR to HSV.
           cv::Mat imgThresholded;
-          cv::inRange(imgHSV, cv::Scalar(iLowH, iLowS, iLowV), cv::Scalar(iHighH, iHighS, iHighV), imgThresholded); //Threshold the image.
+
+          if(iLowH > iHighH)
+          {
+               cv::inRange(imgHSV, cv::Scalar(0, iLowS, iLowV), cv::Scalar(iHighH, iHighS, iHighV), lowermask);
+               cv::inRange(imgHSV, cv::Scalar(iLowH, iLowS, iLowV), cv::Scalar(179, iHighS, iHighV), uppermask);
+               imgThresholded = lowermask | uppermask;
+          }          
+          else cv::inRange(imgHSV, cv::Scalar(iLowH, iLowS, iLowV), cv::Scalar(iHighH, iHighS, iHighV), imgThresholded); //Threshold the image.
 
           //Morphological opening (removes small objects from the foreground).
           erode(imgThresholded, imgThresholded, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
@@ -195,12 +205,25 @@ int main(int argc, char **argv)
 
                          if (centerCoord.x && centerCoord.y != 0 && shouldPublish[i] == true)
                          {
+                              //point paperPoint = convertCoordinatesOfPoint(centerCoord);
+                              // geometry_msgs::Point point_msg;
+                              // point_msg.x = paperPoint.x;
+                              // point_msg.y = paperPoint.y;
                               point_pub.publish(pointToMark(convertCoordinatesOfPoint(centerCoord)));
+                              shouldPublish[i] = false;
                          }
                     }
                }
-               
+               //if(i > 2 && rectsurf[i-2]<rectsurf[i-1]>rectsurf[i])
+               /*if (surfacedif < surflimit)
+               {
+               shouldPublish[i] = false;
+               }*/
                lastRectSurface[i] = rectSurface[i];
+          }
+
+          if (rectCenter.size() != 0)
+          {
           }
 
           if (cv::waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop

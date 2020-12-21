@@ -140,7 +140,6 @@ add_executable(gazebo_odom src/gazebo_odom.cpp)
 add_executable(paper_detection src/paper_detection.cpp)
 add_executable(laser src/laser.cpp)
 
-
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
