@@ -15,7 +15,7 @@ struct Point
     double y;
 };
 
-std::vector<Point> pointsi;
+std::vector<Point> points;
 
 ros::Subscriber laser_sub;
 ros::Publisher obstacle_pub;
