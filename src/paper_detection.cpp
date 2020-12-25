@@ -12,12 +12,12 @@ void createTrackbars(int lowHue, int highHue, int lowSat, int highSat, int lowVa
 
 int main(int argc, char **argv)
 {
-     vector<int> lastRectSurface; //surface area of boundingbox last frame
+     vector<int> lastRectSurface; //Surface area of boundingbox last frame
      vector<bool> shouldPublish;
      int boundColour[] = {0, 0, 255};
      int contourColour[] = {0, 255, 0};
-     int surflimit = 250;            //surflimit defines the lower boundary, where an object will be countoured and for which a bounding box will be made
-     int upperLimitOfdecrease = 100; // this defines the upper limit for the change of the size of the bounding boxes
+     int surflimit = 250;            //Surface limit defines the lower boundary, where an object will be countoured and for which a bounding box will be made
+     int upperLimitOfdecrease = 100; //This defines the upper limit for the change of the size of the bounding boxes
      int surfacedif;
 
      cv::Mat uppermask;
@@ -76,6 +76,7 @@ int main(int argc, char **argv)
 
           cv::Mat imgHSV;
           cvtColor(imgOriginal, imgHSV, cv::COLOR_BGR2HSV); //Convert the captured frame from BGR to HSV.
+
           cv::Mat imgThresholded;
 
           if (iLowH > iHighH)
@@ -124,7 +125,7 @@ int main(int argc, char **argv)
           shouldPublish.resize(rectCenter.size(), true);
           //for (int j = 0; j =< rectCenter.size(); j++)
 
-          vector<int> rectSurface(boundbox.size()); //Surface area of boundingbox last frame.
+          vector<int> rectSurface(boundbox.size()); //Surface area of boundingbox frame.
           lastRectSurface.resize(boundbox.size());  //Surface area of boundingbox last frame.
 
           for (size_t i = 0; i < boundbox.size(); i++)
