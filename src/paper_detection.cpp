@@ -8,6 +8,8 @@ using namespace std;
 
 ros::Publisher rect_cent;
 
+void createTrackbars(int lowHue, int highHue, int lowSat, int highSat, int lowVal, int highVal);
+
 int main(int argc, char **argv)
 {
      vector<int> lastRectSurface; //surface area of boundingbox last frame
@@ -27,7 +29,7 @@ int main(int argc, char **argv)
      //led_pub = n.advertise<kobuki_msgs::Led>("/commands/led1", 10);
 
      cv::VideoCapture cap(0); //Capture the video from webcam.
-     //If the webcam cannot open, it is likely due to the iindex is wrong, thus it is trying to open a webcam that is not accessible through that index.
+     //If the webcam cannot open, it is likely due to the iindex being wrong, thus it is trying to open a webcam that is not accessible through that index.
 
      if (!cap.isOpened()) //If not success, exit program.
      {
@@ -46,19 +48,21 @@ int main(int argc, char **argv)
      int iLowV = 83;
      int iHighV = 255;
 
-     //Create trackbars in "Control" window.
-     cv::createTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
-     cv::createTrackbar("HighH", "Control", &iHighH, 179);
+     // //Create trackbars in "Control" window.
+     // cv::createTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
+     // cv::createTrackbar("HighH", "Control", &iHighH, 179);
 
-     cv::createTrackbar("LowS", "Control", &iLowS, 255); //Saturation (0 - 255)
-     cv::createTrackbar("HighS", "Control", &iHighS, 255);
+     // cv::createTrackbar("LowS", "Control", &iLowS, 255); //Saturation (0 - 255)
+     // cv::createTrackbar("HighS", "Control", &iHighS, 255);
 
-     cv::createTrackbar("LowV", "Control", &iLowV, 255); //Value (0 - 255)
-     cv::createTrackbar("HighV", "Control", &iHighV, 255);
+     // cv::createTrackbar("LowV", "Control", &iLowV, 255); //Value (0 - 255)
+     // cv::createTrackbar("HighV", "Control", &iHighV, 255);
+
+     createTrackbars(iLowH, iHighH, iLowS, iHighS, iLowV, iHighV);
 
      while (ros::ok())
      {
-          ros::spinOnce(); //process odom callback.
+          ros::spinOnce(); //Process odom callback.
 
           cv::Mat imgOriginal;
 
@@ -81,7 +85,9 @@ int main(int argc, char **argv)
                imgThresholded = lowermask | uppermask;
           }
           else
+          {
                cv::inRange(imgHSV, cv::Scalar(iLowH, iLowS, iLowV), cv::Scalar(iHighH, iHighS, iHighV), imgThresholded); //Threshold the image.
+          }
 
           //Morphological opening (removes small objects from the foreground).
           erode(imgThresholded, imgThresholded, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
@@ -91,7 +97,7 @@ int main(int argc, char **argv)
           dilate(imgThresholded, imgThresholded, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
           erode(imgThresholded, imgThresholded, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
 
-          vector<vector<cv::Point>> contours; // makes a 2D vector containing points
+          vector<vector<cv::Point>> contours; //Makes a 2D vector containing points
 
           findContours(imgThresholded, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
 
@@ -111,34 +117,36 @@ int main(int argc, char **argv)
                //std::cout << boundbox[i].tl() << boundbox[i].br() <<  std::endl;
           }
 
-          imshow("Thresholded Image", imgThresholded); //show the thresholded image
-          imshow("Original", imgOriginal);             //show the original image
+          imshow("Thresholded Image", imgThresholded); //Show the thresholded image.
+          imshow("Original", imgOriginal);             //Show the original image.
 
-          vector<cv::Point> rectCenter(boundbox.size()); //current boundingbox center coordinates
-          //shouldPublish.resize(rectCenter.size(), true);
+          vector<cv::Point> rectCenter(boundbox.size()); //Current boundingbox center coordinates.
+          shouldPublish.resize(rectCenter.size(), true);
           //for (int j = 0; j =< rectCenter.size(); j++)
-          //cout << " "
-          vector<int> rectSurface(boundbox.size()); //surface area of boundingbox last frame
-          lastRectSurface.resize(boundbox.size());  //surface area of boundingbox last frame
+
+          vector<int> rectSurface(boundbox.size()); //Surface area of boundingbox last frame.
+          lastRectSurface.resize(boundbox.size());  //Surface area of boundingbox last frame.
 
           for (size_t i = 0; i < boundbox.size(); i++)
           {
                rectSurface[i] = boundbox[i].width * boundbox[i].height;
                surfacedif = lastRectSurface[i] - rectSurface[i];
-               if (surfacedif > surflimit) //if bounding rectangle is smaller than last frame save coordinated of bounding rectangle
+               if (surfacedif > surflimit) //If bounding rectangle is smaller than last frame save coordinated of bounding rectangle
                {
                     rectCenter[i] = {boundbox[i].x + (boundbox[i].width / 2), boundbox[i].y + (boundbox[i].height / 2)};
 
-                    for (size_t i = 0; i < rectCenter.size() && shouldPublish[i] == true; i++)
-                    {
-                         geometry_msgs::Point rectPoint;
-                         rectPoint.x = rectCenter.at(i).x;
-                         rectPoint.y = rectCenter.at(i).y;
+                    // for (size_t i = 0; i < rectCenter.size() && shouldPublish[i] == true; i++)
+                    // {
+                    //      geometry_msgs::Point rectPoint;
+                    //      rectPoint.x = rectCenter.at(i).x;
+                    //      rectPoint.y = rectCenter.at(i).y;
 
-                         rect_cent.publish(rectPoint);
-                         //point_pub.publish(pointToMark(convertCoordinatesOfPoint(centerCoord)));
-                         shouldPublish[i] = false;
-                    }
+                    //      rect_cent.publish(rectPoint);
+                    //      //point_pub.publish(pointToMark(convertCoordinatesOfPoint(centerCoord)));
+                    //      shouldPublish[i] = false;
+                    // }
+
+                    publishRectPoint(rectCenter, shouldPublish);
                }
                lastRectSurface[i] = rectSurface[i];
           }
@@ -150,4 +158,31 @@ int main(int argc, char **argv)
           }
      }
      return 0;
+}
+
+void createTrackbars(int iLowH, int iHighH, int iLowS, int iHighS, int iLowV, int iHighV)
+{
+     //Create trackbars in "Control" window.
+     cv::createTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
+     cv::createTrackbar("HighH", "Control", &iHighH, 179);
+
+     cv::createTrackbar("LowS", "Control", &iLowS, 255); //Saturation (0 - 255)
+     cv::createTrackbar("HighS", "Control", &iHighS, 255);
+
+     cv::createTrackbar("LowV", "Control", &iLowV, 255); //Value (0 - 255)
+     cv::createTrackbar("HighV", "Control", &iHighV, 255);
+}
+
+void publishRectPoint(vector<cv::Point> vectorCoordinates, vector<bool> shouldPub)
+{
+     for (size_t i = 0; i < vectorCoordinates.size() && shouldPub[i] == true; i++)
+     {
+          geometry_msgs::Point rectPoint;
+          rectPoint.x = vectorCoordinates.at(i).x;
+          rectPoint.y = vectorCoordinates.at(i).y;
+
+          rect_cent.publish(rectPoint);
+
+          shouldPub[i] = false;
+     }
 }
