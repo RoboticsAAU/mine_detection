@@ -13,9 +13,8 @@ ros::Subscriber rect_cent;
 turtlesim::Pose cur_pose;
 
 int iterationCount = 0;
-class point
+struct point
 {
-public:
     double x;
     double y;
 };
@@ -46,17 +45,17 @@ struct EulerAngles
 
 EulerAngles angles;
 
-//convert quarternion into eulerangles.
+//Convert quarternion into eulerangles.
 EulerAngles ToEulerAngles(Quaternion q)
 {
     EulerAngles angles;
 
-    //roll (x axis rotation)
+    //Roll (x axis rotation)
     double sinr_cosp = 2 * (q.w * q.x - q.y * q.z);
     double cosr_cosp = 1 - 2 * (q.x * q.x + q.y * q.y);
     angles.roll = atan2(sinr_cosp, cosr_cosp);
 
-    //pitch (y axis rotation)
+    //Pitch (y axis rotation)
     double sinp = 2 * (q.w * q.y - q.z * q.x);
     if (abs(sinp) >= 1)
         //copysign returns the magnitude of M_PI/2 with the sign of sinp
@@ -64,10 +63,10 @@ EulerAngles ToEulerAngles(Quaternion q)
     else
         angles.pitch = asin(sinp);
 
-    // yaw (z-axis rotation)
+    //Yaw (z-axis rotation)
     double siny_cosp = 2 * (q.w * q.z + q.x * q.y);
     double cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
-    //calculate yaw, and make the yaw angle be 0 < yaw < 2pi.
+    //Calculate yaw, and make the yaw angle be 0 < yaw < 2pi.
     angles.yaw = std::atan2(siny_cosp, cosy_cosp);
 
     return angles;
@@ -83,6 +82,7 @@ int main(int argc, char **argv)
     rect_cent = n.subscribe("/rect_center", 100, &rectCallback);
     point_pub = n.advertise<visualization_msgs::Marker>("/visualization_marker", 100);
 
+    //Publishes the converted rectangle center point into RViz as a marker.
     point_pub.publish(pointToMark(convertCoordinatesOfPoint(rect_center)));
 
     return 0;
@@ -112,6 +112,7 @@ void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message)
     //std::cout << "Recieved point: " << cur_pose.x << " : " << cur_pose.y << " - angle: " << cur_pose.theta << std::endl;
 }
 
+//Callback function for the rectangle centers.
 void rectCallback(const geometry_msgs::Point::ConstPtr &rect_message)
 {
     rect_center.x = rect_message->x;
@@ -204,10 +205,9 @@ point convertCoordinatesOfPoint(point Coord)
 
     //The coordinates of the found paper from the robots Origin point.
     //Determined from the coordinates of the robot from its Origin + the vector from the robot centre to the found point.
-
     point paperPoint;
-    paperPoint.x = cur_pose.x + rotatedPoint.x; //cur_pose.x
-    paperPoint.y = cur_pose.y + rotatedPoint.y; //cur_pose.y
+    paperPoint.x = cur_pose.x + rotatedPoint.x;
+    paperPoint.y = cur_pose.y + rotatedPoint.y;
     return paperPoint;
 }
 
@@ -218,18 +218,18 @@ visualization_msgs::Marker pointToMark(point markcalc)
     marker.header.frame_id = "/odom";
     marker.header.stamp = ros::Time();
 
-    // Set the namespace and id for this marker.  This serves to create a unique ID
+    // Set the namespace and id for this marker. This serves to create a unique ID
     // Any marker sent with the same namespace and id will overwrite the old one
     marker.ns = "paper_pose";
     marker.id = iterationCount;
 
-    // Set the marker type.  Initially this is CUBE, and cycles between that and SPHERE, ARROW, and CYLINDER
+    // Set the marker type. Initially this is CUBE, and cycles between that and SPHERE, ARROW, and CYLINDER
     marker.type = visualization_msgs::Marker::CUBE;
 
-    // Set the marker action.  Options are ADD, DELETE, and new in ROS Indigo: 3 (DELETEALL)
+    // Set the marker action. Options are ADD, DELETE, and new in ROS Indigo: 3 (DELETEALL)
     marker.action = visualization_msgs::Marker::ADD;
 
-    // Set the pose of the marker.  This is a full 6DOF pose relative to the frame/time specified in the header
+    // Set the pose of the marker. This is a full 6DOF pose relative to the frame/time specified in the header
     marker.pose.position.x = markcalc.x;
     marker.pose.position.y = markcalc.y;
     marker.pose.position.z = 0;
@@ -246,7 +246,7 @@ visualization_msgs::Marker pointToMark(point markcalc)
     marker.color.b = 0.0;
     marker.color.a = 1.0;
 
-    marker.lifetime = ros::Duration(); //This makes
+    marker.lifetime = ros::Duration(); //This makes the marker exist for as long as ROS is running
 
     iterationCount++;
     return marker;
