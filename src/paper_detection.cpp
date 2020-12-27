@@ -78,8 +78,8 @@ int main(int argc, char **argv)
 
           findContours(imgThresholded, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0)); //finds contours from thresholded image
 
-          vector<cv::Rect> boundbox(contours.size());
-          vector<vector<cv::Point>> contours_poly(contours.size());
+          vector<cv::Rect> boundbox(contours.size()); //declare an array of rectangles, with the size of the contours array. 
+          vector<vector<cv::Point>> contours_poly(contours.size()); //declare a two-dimensional array of point objects with the size of contours. 
 
           for (size_t i = 0; i < contours.size(); i++)
           {
