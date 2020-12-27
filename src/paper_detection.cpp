@@ -10,9 +10,8 @@ ros::Publisher rect_cent;
 
 void createTrackbars();
 void publishRectPoint(vector<cv::Point> vectorCoordinates, vector<bool> shouldPub);
-cv::Mat denoiseImg (cv::Mat imgThresholded);
-cv::Mat defineRange (cv::Mat imgHSV, cv::Mat imgThresholded);
-
+cv::Mat denoiseImg(cv::Mat imgThresholded);
+cv::Mat defineRange(cv::Mat imgHSV, cv::Mat imgThresholded);
 
 int iLowH = 170;
 int iHighH = 179;
@@ -23,21 +22,19 @@ int iHighS = 255;
 int iLowV = 83;
 int iHighV = 255;
 
-
 int main(int argc, char **argv)
 {
      vector<int> lastRectSurface; //Surface area of boundingbox last frame
      vector<bool> shouldPublish;
-     int boundColour[] = {0, 0, 255}; // Colours of drawn boundingrectangle in R - G - B
+     int boundColour[] = {0, 0, 255};   // Colours of drawn boundingrectangle in R - G - B
      int contourColour[] = {0, 255, 0}; //colours of drawn contours in R - G - B
-     int surflimit = 250;            //Surface limit defines the lower boundary, where an object will be countoured and for which a bounding box will be made
-     int upperLimitOfdecrease = 100; //This defines the upper limit for the change of the size of the bounding boxes
-     int surfacedif; //Surface difference limit for publishing check
+     int surflimit = 250;               //Surface limit defines the lower boundary, where an object will be countoured and for which a bounding box will be made
+     int upperLimitOfdecrease = 100;    //This defines the upper limit for the change of the size of the bounding boxes
+     int surfacedif;                    //Surface difference limit for publishing check
 
      ros::init(argc, argv, "paper_detector");
      ros::NodeHandle n;
      rect_cent = n.advertise<geometry_msgs::Point>("/rect_center", 100); //visualization_msgs::Marker /visualization_marker
-     //led_pub = n.advertise<kobuki_msgs::Led>("/commands/led1", 10);
 
      cv::VideoCapture cap(0); //Capture the video from webcam.
      //If the webcam cannot open, it is likely due to the iindex being wrong, thus it is trying to open a webcam that is not accessible through that index.
@@ -50,7 +47,8 @@ int main(int argc, char **argv)
 
      cv::namedWindow("Control", CV_WINDOW_AUTOSIZE); //Create a window called "Control".
 
-     createTrackbars();
+     //Create a window with trackbars for HSV values.
+     createTrackbars(); //These are changeable in the window, but are defined as global variables from the start.
 
      while (ros::ok())
      {
@@ -66,10 +64,8 @@ int main(int argc, char **argv)
                break;
           }
 
-
           cv::Mat imgHSV;
           cvtColor(imgOriginal, imgHSV, cv::COLOR_BGR2HSV); //Convert the captured frame from BGR to HSV.
-
 
           cv::Mat imgThresholded = defineRange(imgHSV, imgThresholded);
           imgThresholded = denoiseImg(imgThresholded); //Saves denoised image in the original thresholded image
@@ -87,7 +83,6 @@ int main(int argc, char **argv)
                boundbox[i] = boundingRect(contours_poly[i]);
                drawContours(imgOriginal, contours_poly, -1, (contourColour[0], contourColour[1], contourColour[2]), 3);
                rectangle(imgOriginal, boundbox[i].tl(), boundbox[i].br(), (boundColour[0], boundColour[1], boundColour[2]), 2, 8, 0);
-               //std::cout << boundbox[i].tl() << boundbox[i].br() <<  std::endl;
           }
 
           imshow("Thresholded Image", imgThresholded); //Show the thresholded image.
@@ -95,7 +90,6 @@ int main(int argc, char **argv)
 
           vector<cv::Point> rectCenter(boundbox.size()); //Current boundingbox center coordinates.
           shouldPublish.resize(rectCenter.size(), true);
-          //for (int j = 0; j =< rectCenter.size(); j++)
 
           vector<int> rectSurface(boundbox.size()); //Surface area of boundingbox frame.
           lastRectSurface.resize(boundbox.size());  //Surface area of boundingbox last frame.
@@ -121,11 +115,9 @@ int main(int argc, char **argv)
      return 0;
 }
 
-
-
+//Create trackbars in "Control" window.
 void createTrackbars()
 {
-     //Create trackbars in "Control" window.
      cv::createTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
      cv::createTrackbar("HighH", "Control", &iHighH, 179);
 
@@ -136,6 +128,7 @@ void createTrackbars()
      cv::createTrackbar("HighV", "Control", &iHighV, 255);
 }
 
+//Publish rectPoint x- and y-coordinates to rect_cent for the i'th point if the boolean shouldPub is true.
 void publishRectPoint(vector<cv::Point> vectorCoordinates, vector<bool> shouldPub)
 {
      for (size_t i = 0; i < vectorCoordinates.size() && shouldPub[i] == true; i++)
@@ -150,9 +143,10 @@ void publishRectPoint(vector<cv::Point> vectorCoordinates, vector<bool> shouldPu
      }
 }
 
-cv::Mat denoiseImg (cv::Mat imgThresholded) //removes noise and fixes holes in binary image
+//Removes noise and fixes holes in binary image.
+cv::Mat denoiseImg(cv::Mat imgThresholded)
 {
- //Morphological opening (removes small objects from the foreground).
+     //Morphological opening (removes small objects from the foreground).
      erode(imgThresholded, imgThresholded, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
      dilate(imgThresholded, imgThresholded, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
 
@@ -163,7 +157,8 @@ cv::Mat denoiseImg (cv::Mat imgThresholded) //removes noise and fixes holes in b
      return imgThresholded;
 }
 
-cv::Mat defineRange (cv::Mat imgHSV, cv::Mat imgThresholded) //threshol funktion
+//The function defines the thresholds for the HSV values.
+cv::Mat defineRange(cv::Mat imgHSV, cv::Mat imgThresholded)
 {
      cv::Mat uppermask;
      cv::Mat lowermask;
