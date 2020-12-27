@@ -98,18 +98,12 @@ int main(int argc, char **argv)
           {
                rectSurface[i] = boundbox[i].width * boundbox[i].height;
                surfacedif = lastRectSurface[i] - rectSurface[i];
-               if (surfacedif > surflimit) //If bounding rectangle is smaller than last frame save coordinated of bounding rectangle
+               if (surfacedif > surflimit) //If bounding rectangle is smaller than last frame, save coordinates of bounding rectangle
                {
                     rectCenter[i] = {boundbox[i].x + (boundbox[i].width / 2), boundbox[i].y + (boundbox[i].height / 2)};
                     publishRectPoint(rectCenter, shouldPublish);
                }
                lastRectSurface[i] = rectSurface[i];
-          }
-
-          if (cv::waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
-          {
-               std::cout << "esc key is pressed by user" << endl;
-               break;
           }
      }
      return 0;
