@@ -13,6 +13,9 @@ void publishRectPoint(vector<cv::Point> vectorCoordinates, vector<bool> shouldPu
 cv::Mat denoiseImg(cv::Mat imgThresholded);
 cv::Mat defineRange(cv::Mat imgHSV);
 
+const int surfLim = 250; //Surface limit defines the lower boundary, where an object will be countoured and for which a bounding box will be made.
+int surfDif;             //Surface difference limit for publishing check.
+
 int iLowH = 170;
 int iHighH = 179;
 
@@ -28,9 +31,6 @@ int main(int argc, char **argv)
      vector<bool> shouldPublish;
      int boundColour[] = {0, 0, 255};   //Colours of drawn boundingrectangle in R - G - B
      int contourColour[] = {0, 255, 0}; //Colours of drawn contours in R - G - B
-     int surflimit = 250;               //Surface limit defines the lower boundary, where an object will be countoured and for which a bounding box will be made
-     int upperLimitOfdecrease = 100;    //This defines the upper limit for the change of the size of the bounding boxes
-     int surfacedif;                    //Surface difference limit for publishing check
 
      ros::init(argc, argv, "paper_detector");
      ros::NodeHandle n;
@@ -89,25 +89,49 @@ int main(int argc, char **argv)
           imshow("Original", imgOriginal);             //Show the original image.
 
           vector<cv::Point> rectCenter(boundbox.size()); //Current boundingbox center coordinates.
-          shouldPublish.resize(rectCenter.size(), true);
+          shouldPublish.resize(rectCenter.size(), true); //Resizes shouldPublish to the size of rectCenter and sets each element to be true.
 
           vector<int> rectSurface(boundbox.size()); //Surface area of boundingbox frame.
-          lastRectSurface.resize(boundbox.size());  //Surface area of boundingbox last frame.
+          lastRectSurface.resize(boundbox.size());  //Last surface area is resized to the size of boundingbox.
 
           for (size_t i = 0; i < boundbox.size(); i++)
           {
                rectSurface[i] = boundbox[i].width * boundbox[i].height;
-               surfacedif = lastRectSurface[i] - rectSurface[i];
-               if (surfacedif > surflimit) //If bounding rectangle is smaller than last frame, save coordinates of bounding rectangle
+               surfDif = lastRectSurface[i] - rectSurface[i];
+               if (surfDif > surfLim) //If bounding rectangle is smaller than last frame, save coordinates of bounding rectangle.
                {
                     rectCenter[i] = {boundbox[i].x + (boundbox[i].width / 2), boundbox[i].y + (boundbox[i].height / 2)};
                     publishRectPoint(rectCenter, shouldPublish);
                }
                lastRectSurface[i] = rectSurface[i];
           }
+
+          // for (size_t i = 0; i < boundbox.size(); i++)
+          // {
+          //      if (publishCheck(lastRectSurface[i], rectSurface[i], boundbox[i], shouldPublish[i])) //If bounding rectangle is smaller than last frame, save coordinates of bounding rectangle
+          //      {
+          //           rectCenter[i] = {boundbox[i].x + (boundbox[i].width / 2), boundbox[i].y + (boundbox[i].height / 2)};
+          //           publishRectPoint(rectCenter, shouldPublish);
+          //      }
+          // }
      }
      return 0;
 }
+
+// bool publishCheck(int lastRectSurf, int rectSurf, cv::Rect boundbox, bool shouldPub)
+// {
+//      rectSurf = boundbox.width * boundbox.height;
+//      surfDif = lastRectSurf - rectSurf;
+
+//      if (surfDif > surfLim && shouldPub)
+//      {
+//           shouldPub = false;
+//           return true;
+//      }
+
+//      lastRectSurf = rectSurf;
+//      return false;
+// }
 
 //Create trackbars in "Control" window.
 void createTrackbars()
@@ -125,15 +149,17 @@ void createTrackbars()
 //Publish rectPoint x- and y-coordinates to rect_cent for the i'th point if the boolean shouldPub is true.
 void publishRectPoint(vector<cv::Point> vectorCoordinates, vector<bool> shouldPub)
 {
-     for (size_t i = 0; i < vectorCoordinates.size() && shouldPub[i] == true; i++)
+     for (size_t i = 0; i < vectorCoordinates.size(); i++)
      {
-          geometry_msgs::Point rectPoint;
-          rectPoint.x = vectorCoordinates.at(i).x;
-          rectPoint.y = vectorCoordinates.at(i).y;
+          if (shouldPub[i])
+          {
+               geometry_msgs::Point rectPoint;
+               rectPoint.x = vectorCoordinates[i].x;
+               rectPoint.y = vectorCoordinates[i].y;
 
-          rect_cent.publish(rectPoint);
-
-          shouldPub[i] = false;
+               rect_cent.publish(rectPoint);
+               shouldPub[i] = false;
+          }
      }
 }
 

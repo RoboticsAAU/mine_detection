@@ -85,7 +85,7 @@ int main(int argc, char **argv)
 
     while (ros::ok())
     {
-        ros::spinOnce(); //Process odom callback.
+        ros::spinOnce(); //Process odom and rect_center callback.
 
         //Publishes the converted rectangle center point into RViz as a marker.
         point_pub.publish(pointToMark(convertCoordinatesOfPoint(rect_center)));
