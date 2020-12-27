@@ -97,20 +97,20 @@ int main(int argc, char **argv)
 //Everytime a message arrives, this function is called. It updates the robots coordinates and its orientation.
 void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message)
 {
-    // Get the x,y position of the robot.
+    //Get the x,y position of the robot.
     cur_pose.x = pose_message->pose.pose.position.x;
     cur_pose.y = pose_message->pose.pose.position.y;
 
-    // Quaternion object q.
+    //Quaternion object q.
     Quaternion q;
 
-    // Assign values of pose message to quaternion.
+    //Assign values of pose message to quaternion.
     q.x = pose_message->pose.pose.orientation.x;
     q.y = pose_message->pose.pose.orientation.y;
     q.z = pose_message->pose.pose.orientation.z;
     q.w = pose_message->pose.pose.orientation.w;
 
-    // Retrieve Euler angles from quaternion pose message.
+    //Retrieve Euler angles from quaternion pose message.
     angles = ToEulerAngles(q);
 
     cur_pose.theta = angles.yaw;
@@ -157,7 +157,7 @@ point rotatePointByAngle(double angle, point coord)
 
 point convertCoordinatesOfPoint(point Coord)
 {
-    // Changable variables: Diagonal FOV of the camera, and the camera distance to the ground.
+    //Changable variables: Diagonal FOV of the camera, and the camera distance to the ground.
     double FOV = 64; //78
     double distFromGroundCam = 0.35;
 
@@ -169,7 +169,6 @@ point convertCoordinatesOfPoint(point Coord)
 
     double length = 2 * cos(alpha) * a;
     double width = 2 * sin(alpha) * a;
-    //std::cout << "Dimensions: " << length << " ; " << width << "\n";
 
     //Converts the point's coordinates from pixels to meters using the pixelsToMeters function.
     point coordInMeters = pixelsToMeters(Coord, length);
@@ -177,7 +176,7 @@ point convertCoordinatesOfPoint(point Coord)
     //Since the camera determines the coordinates of the point using the y-axis going downwards. The y-axis is reverted by adding a negative sign.
     coordInMeters.y = -coordInMeters.y;
 
-    // The vector from the middle of the camera to the center of the robot. Measured as difference in x and y respectively and is changable.
+    //The vector from the middle of the camera to the center of the robot. Measured as difference in x and y respectively and is changable.
     point camCenterToRobotCenter;
     camCenterToRobotCenter.x = 0;
     camCenterToRobotCenter.y = -0.21;
@@ -186,26 +185,22 @@ point convertCoordinatesOfPoint(point Coord)
     point camOrigoToCamCenter;
     camOrigoToCamCenter.x = 1.0 / 2.0 * length;
     camOrigoToCamCenter.y = -1.0 / 2.0 * width;
-    //std::cout << "camOrigoToCamCenter: " << camOrigoToCamCenter.x << " ; " << camOrigoToCamCenter.y << "\n";
 
     //The vector from the projected area's Origo to the center of the robot.
     //This is done to shift the coodinate-system of the camera to a coodinate-system with Origo in the robot's centre.
     point camOrigoToRobot;
     camOrigoToRobot.x = camCenterToRobotCenter.x + camOrigoToCamCenter.x;
     camOrigoToRobot.y = camCenterToRobotCenter.y + camOrigoToCamCenter.y;
-    //std::cout << "camOrigoToRobot: " << camOrigoToRobot.x << " ; " << camOrigoToRobot.y << "\n";
 
     //The vector of the found point from the robot centre (in meters).
     point coordInMetersToRobotOrigo;
     coordInMetersToRobotOrigo.x = coordInMeters.x - camOrigoToRobot.x;
     coordInMetersToRobotOrigo.y = coordInMeters.y - camOrigoToRobot.y;
-    //std::cout << "coordInMetersToRobotOrigo: " << coordInMetersToRobotOrigo.x << " ; " << coordInMetersToRobotOrigo.y << "\n";
 
     //The found point is rotated to fit with the robots coodinate-system.
     //It is then rotated with the current angle of the robot measured from the x-axis to determine the correct position of the point compared to the robot.
     point rotatedPoint = rotatePointByAngle(getTheta(cur_pose.theta), coordInMetersToRobotOrigo); // if the first argument for rotatePointByAngle is not
     // getTheta(cur_pose.theta) then it is in test-mode
-    //std::cout << "RotatedPoint: " << rotatedPoint.x << " ; " << rotatedPoint.y << "\n";
 
     //The coordinates of the found paper from the robots Origin point.
     //Determined from the coordinates of the robot from its Origin + the vector from the robot centre to the found point.
@@ -218,7 +213,7 @@ point convertCoordinatesOfPoint(point Coord)
 visualization_msgs::Marker pointToMark(point markcalc)
 {
     visualization_msgs::Marker marker;
-    // Set the frame ID and timestamp.  See the TF tutorials for information on these.
+    // Set the frame ID and timestamp. See the TF tutorials for information on these.
     marker.header.frame_id = "/odom";
     marker.header.stamp = ros::Time();
 

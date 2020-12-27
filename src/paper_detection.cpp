@@ -26,8 +26,8 @@ int main(int argc, char **argv)
 {
      vector<int> lastRectSurface; //Surface area of boundingbox last frame
      vector<bool> shouldPublish;
-     int boundColour[] = {0, 0, 255};   // Colours of drawn boundingrectangle in R - G - B
-     int contourColour[] = {0, 255, 0}; //colours of drawn contours in R - G - B
+     int boundColour[] = {0, 0, 255};   //Colours of drawn boundingrectangle in R - G - B
+     int contourColour[] = {0, 255, 0}; //Colours of drawn contours in R - G - B
      int surflimit = 250;               //Surface limit defines the lower boundary, where an object will be countoured and for which a bounding box will be made
      int upperLimitOfdecrease = 100;    //This defines the upper limit for the change of the size of the bounding boxes
      int surfacedif;                    //Surface difference limit for publishing check
@@ -68,14 +68,14 @@ int main(int argc, char **argv)
           cvtColor(imgOriginal, imgHSV, cv::COLOR_BGR2HSV); //Convert the captured frame from BGR to HSV.
 
           cv::Mat imgThresholded = defineRange(imgHSV, imgThresholded);
-          imgThresholded = denoiseImg(imgThresholded); //Saves denoised image in the original thresholded image
+          imgThresholded = denoiseImg(imgThresholded); //Saves denoised image in the original thresholded image.
 
-          vector<vector<cv::Point>> contours; //Makes a 2D vector containing points
+          vector<vector<cv::Point>> contours; //Makes a 2D vector containing points.
 
           findContours(imgThresholded, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0)); //finds contours from thresholded image
 
-          vector<cv::Rect> boundbox(contours.size()); //declare an array of rectangles, with the size of the contours array. 
-          vector<vector<cv::Point>> contours_poly(contours.size()); //declare a two-dimensional array of point objects with the size of contours. 
+          vector<cv::Rect> boundbox(contours.size());               //Declare an array of rectangles, with the size of the contours array.
+          vector<vector<cv::Point>> contours_poly(contours.size()); //Declare a two-dimensional array of point objects with the size of contours.
 
           for (size_t i = 0; i < contours.size(); i++)
           {
