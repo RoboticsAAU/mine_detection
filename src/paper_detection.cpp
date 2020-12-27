@@ -8,20 +8,31 @@ using namespace std;
 
 ros::Publisher rect_cent;
 
-void createTrackbars(int lowHue, int highHue, int lowSat, int highSat, int lowVal, int highVal);
+void createTrackbars();
+void publishRectPoint(vector<cv::Point> vectorCoordinates, vector<bool> shouldPub);
+cv::Mat denoiseImg (cv::Mat imgThresholded);
+cv::Mat defineRange (cv::Mat imgHSV, cv::Mat imgThresholded);
+
+
+int iLowH = 170;
+int iHighH = 179;
+
+int iLowS = 170;
+int iHighS = 255;
+
+int iLowV = 83;
+int iHighV = 255;
+
 
 int main(int argc, char **argv)
 {
      vector<int> lastRectSurface; //Surface area of boundingbox last frame
      vector<bool> shouldPublish;
-     int boundColour[] = {0, 0, 255};
-     int contourColour[] = {0, 255, 0};
+     int boundColour[] = {0, 0, 255}; // Colours of drawn boundingrectangle in R - G - B
+     int contourColour[] = {0, 255, 0}; //colours of drawn contours in R - G - B
      int surflimit = 250;            //Surface limit defines the lower boundary, where an object will be countoured and for which a bounding box will be made
      int upperLimitOfdecrease = 100; //This defines the upper limit for the change of the size of the bounding boxes
-     int surfacedif;
-
-     cv::Mat uppermask;
-     cv::Mat lowermask;
+     int surfacedif; //Surface difference limit for publishing check
 
      ros::init(argc, argv, "paper_detector");
      ros::NodeHandle n;
@@ -39,26 +50,7 @@ int main(int argc, char **argv)
 
      cv::namedWindow("Control", CV_WINDOW_AUTOSIZE); //Create a window called "Control".
 
-     int iLowH = 170;
-     int iHighH = 179;
-
-     int iLowS = 170;
-     int iHighS = 255;
-
-     int iLowV = 83;
-     int iHighV = 255;
-
-     // //Create trackbars in "Control" window.
-     // cv::createTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
-     // cv::createTrackbar("HighH", "Control", &iHighH, 179);
-
-     // cv::createTrackbar("LowS", "Control", &iLowS, 255); //Saturation (0 - 255)
-     // cv::createTrackbar("HighS", "Control", &iHighS, 255);
-
-     // cv::createTrackbar("LowV", "Control", &iLowV, 255); //Value (0 - 255)
-     // cv::createTrackbar("HighV", "Control", &iHighV, 255);
-
-     createTrackbars(iLowH, iHighH, iLowS, iHighS, iLowV, iHighV);
+     createTrackbars();
 
      while (ros::ok())
      {
@@ -74,33 +66,17 @@ int main(int argc, char **argv)
                break;
           }
 
+
           cv::Mat imgHSV;
           cvtColor(imgOriginal, imgHSV, cv::COLOR_BGR2HSV); //Convert the captured frame from BGR to HSV.
 
-          cv::Mat imgThresholded;
 
-          if (iLowH > iHighH)
-          {
-               cv::inRange(imgHSV, cv::Scalar(0, iLowS, iLowV), cv::Scalar(iHighH, iHighS, iHighV), lowermask);
-               cv::inRange(imgHSV, cv::Scalar(iLowH, iLowS, iLowV), cv::Scalar(179, iHighS, iHighV), uppermask);
-               imgThresholded = lowermask | uppermask;
-          }
-          else
-          {
-               cv::inRange(imgHSV, cv::Scalar(iLowH, iLowS, iLowV), cv::Scalar(iHighH, iHighS, iHighV), imgThresholded); //Threshold the image.
-          }
-
-          //Morphological opening (removes small objects from the foreground).
-          erode(imgThresholded, imgThresholded, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
-          dilate(imgThresholded, imgThresholded, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
-
-          //Morphological closing (removes small holes from the foreground).
-          dilate(imgThresholded, imgThresholded, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
-          erode(imgThresholded, imgThresholded, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
+          cv::Mat imgThresholded = defineRange(imgHSV, imgThresholded);
+          imgThresholded = denoiseImg(imgThresholded); //Saves denoised image in the original thresholded image
 
           vector<vector<cv::Point>> contours; //Makes a 2D vector containing points
 
-          findContours(imgThresholded, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+          findContours(imgThresholded, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0)); //finds contours from thresholded image
 
           vector<cv::Rect> boundbox(contours.size());
           vector<vector<cv::Point>> contours_poly(contours.size());
@@ -109,10 +85,6 @@ int main(int argc, char **argv)
           {
                approxPolyDP(cv::Mat(contours[i]), contours_poly[i], 3, true);
                boundbox[i] = boundingRect(contours_poly[i]);
-          }
-
-          for (size_t i = 0; i < contours.size(); i++)
-          {
                drawContours(imgOriginal, contours_poly, -1, (contourColour[0], contourColour[1], contourColour[2]), 3);
                rectangle(imgOriginal, boundbox[i].tl(), boundbox[i].br(), (boundColour[0], boundColour[1], boundColour[2]), 2, 8, 0);
                //std::cout << boundbox[i].tl() << boundbox[i].br() <<  std::endl;
@@ -135,18 +107,6 @@ int main(int argc, char **argv)
                if (surfacedif > surflimit) //If bounding rectangle is smaller than last frame save coordinated of bounding rectangle
                {
                     rectCenter[i] = {boundbox[i].x + (boundbox[i].width / 2), boundbox[i].y + (boundbox[i].height / 2)};
-
-                    // for (size_t i = 0; i < rectCenter.size() && shouldPublish[i] == true; i++)
-                    // {
-                    //      geometry_msgs::Point rectPoint;
-                    //      rectPoint.x = rectCenter.at(i).x;
-                    //      rectPoint.y = rectCenter.at(i).y;
-
-                    //      rect_cent.publish(rectPoint);
-                    //      //point_pub.publish(pointToMark(convertCoordinatesOfPoint(centerCoord)));
-                    //      shouldPublish[i] = false;
-                    // }
-
                     publishRectPoint(rectCenter, shouldPublish);
                }
                lastRectSurface[i] = rectSurface[i];
@@ -161,7 +121,9 @@ int main(int argc, char **argv)
      return 0;
 }
 
-void createTrackbars(int iLowH, int iHighH, int iLowS, int iHighS, int iLowV, int iHighV)
+
+
+void createTrackbars()
 {
      //Create trackbars in "Control" window.
      cv::createTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
@@ -186,4 +148,36 @@ void publishRectPoint(vector<cv::Point> vectorCoordinates, vector<bool> shouldPu
 
           shouldPub[i] = false;
      }
+}
+
+cv::Mat denoiseImg (cv::Mat imgThresholded) //removes noise and fixes holes in binary image
+{
+ //Morphological opening (removes small objects from the foreground).
+     erode(imgThresholded, imgThresholded, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
+     dilate(imgThresholded, imgThresholded, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
+
+     //Morphological closing (removes small holes from the foreground).
+     dilate(imgThresholded, imgThresholded, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
+     erode(imgThresholded, imgThresholded, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
+
+     return imgThresholded;
+}
+
+cv::Mat defineRange (cv::Mat imgHSV, cv::Mat imgThresholded) //threshol funktion
+{
+     cv::Mat uppermask;
+     cv::Mat lowermask;
+
+     if (iLowH > iHighH)
+     {
+          cv::inRange(imgHSV, cv::Scalar(0, iLowS, iLowV), cv::Scalar(iHighH, iHighS, iHighV), lowermask);
+          cv::inRange(imgHSV, cv::Scalar(iLowH, iLowS, iLowV), cv::Scalar(179, iHighS, iHighV), uppermask);
+          imgThresholded = lowermask | uppermask;
+     }
+     else
+     {
+          cv::inRange(imgHSV, cv::Scalar(iLowH, iLowS, iLowV), cv::Scalar(iHighH, iHighS, iHighV), imgThresholded); //Threshold the image.
+     }
+
+     return imgThresholded;
 }
