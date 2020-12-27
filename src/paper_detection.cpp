@@ -11,7 +11,7 @@ ros::Publisher rect_cent;
 void createTrackbars();
 void publishRectPoint(vector<cv::Point> vectorCoordinates, vector<bool> shouldPub);
 cv::Mat denoiseImg(cv::Mat imgThresholded);
-cv::Mat defineRange(cv::Mat imgHSV, cv::Mat imgThresholded);
+cv::Mat defineRange(cv::Mat imgHSV);
 
 int iLowH = 170;
 int iHighH = 179;
@@ -67,7 +67,7 @@ int main(int argc, char **argv)
           cv::Mat imgHSV;
           cvtColor(imgOriginal, imgHSV, cv::COLOR_BGR2HSV); //Convert the captured frame from BGR to HSV.
 
-          cv::Mat imgThresholded = defineRange(imgHSV, imgThresholded);
+          cv::Mat imgThresholded = defineRange(imgHSV);
           imgThresholded = denoiseImg(imgThresholded); //Saves denoised image in the original thresholded image.
 
           vector<vector<cv::Point>> contours; //Makes a 2D vector containing points.
@@ -158,8 +158,9 @@ cv::Mat denoiseImg(cv::Mat imgThresholded)
 }
 
 //The function defines the thresholds for the HSV values.
-cv::Mat defineRange(cv::Mat imgHSV, cv::Mat imgThresholded)
+cv::Mat defineRange(cv::Mat imgHSV)
 {
+     cv::Mat imgThresholded;
      cv::Mat uppermask;
      cv::Mat lowermask;
 
