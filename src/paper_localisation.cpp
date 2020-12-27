@@ -66,6 +66,7 @@ EulerAngles ToEulerAngles(Quaternion q)
     //Yaw (z-axis rotation)
     double siny_cosp = 2 * (q.w * q.z + q.x * q.y);
     double cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
+
     //Calculate yaw, and make the yaw angle be 0 < yaw < 2pi.
     angles.yaw = std::atan2(siny_cosp, cosy_cosp);
 
@@ -96,8 +97,7 @@ int main(int argc, char **argv)
 //Everytime a message arrives, this function is called. It updates the robots coordinates and its orientation.
 void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message)
 {
-    //std::cout << "Callback" << std::endl;
-    // Get the x,y position.
+    // Get the x,y position of the robot.
     cur_pose.x = pose_message->pose.pose.position.x;
     cur_pose.y = pose_message->pose.pose.position.y;
 
@@ -114,7 +114,6 @@ void poseCallback(const nav_msgs::Odometry::ConstPtr &pose_message)
     angles = ToEulerAngles(q);
 
     cur_pose.theta = angles.yaw;
-    //std::cout << "Recieved point: " << cur_pose.x << " : " << cur_pose.y << " - angle: " << cur_pose.theta << std::endl;
 }
 
 //Callback function for the rectangle centers.
@@ -128,7 +127,7 @@ double getTheta(double angle)
 {
     //If theta is negative it is converted to the corresponding positive angle (Theta becomes negative when the turtle rotates clockwise).
     double theta = angle < 0 ? angle + 2 * M_PI : angle;
-    //cout << "Got theta: " << theta << endl;
+
     return theta;
 }
 
