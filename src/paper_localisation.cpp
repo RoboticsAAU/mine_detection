@@ -82,8 +82,13 @@ int main(int argc, char **argv)
     rect_cent = n.subscribe("/rect_center", 100, &rectCallback);
     point_pub = n.advertise<visualization_msgs::Marker>("/visualization_marker", 100);
 
-    //Publishes the converted rectangle center point into RViz as a marker.
-    point_pub.publish(pointToMark(convertCoordinatesOfPoint(rect_center)));
+    while (ros::ok())
+    {
+        ros::spinOnce(); //Process odom callback.
+
+        //Publishes the converted rectangle center point into RViz as a marker.
+        point_pub.publish(pointToMark(convertCoordinatesOfPoint(rect_center)));
+    }
 
     return 0;
 }
