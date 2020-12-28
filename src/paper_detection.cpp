@@ -105,33 +105,9 @@ int main(int argc, char **argv)
                }
                lastRectSurface[i] = rectSurface[i]; //Set last rectangle surface to current rectangle surface.
           }
-
-          // for (size_t i = 0; i < boundbox.size(); i++)
-          // {
-          //      if (publishCheck(lastRectSurface[i], rectSurface[i], boundbox[i], shouldPublish[i])) //If bounding rectangle is smaller than last frame, save coordinates of bounding rectangle
-          //      {
-          //           rectCenter[i] = {boundbox[i].x + (boundbox[i].width / 2), boundbox[i].y + (boundbox[i].height / 2)};
-          //           publishRectPoint(rectCenter, shouldPublish);
-          //      }
-          // }
      }
      return 0;
 }
-
-// bool publishCheck(int lastRectSurf, int rectSurf, cv::Rect boundbox, bool shouldPub)
-// {
-//      rectSurf = boundbox.width * boundbox.height;
-//      surfDif = lastRectSurf - rectSurf;
-
-//      if (surfDif > surfLim && shouldPub)
-//      {
-//           shouldPub = false;
-//           return true;
-//      }
-
-//      lastRectSurf = rectSurf;
-//      return false;
-// }
 
 //Create trackbars in "Control" window.
 void createTrackbars()
