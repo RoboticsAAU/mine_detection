@@ -96,14 +96,14 @@ int main(int argc, char **argv)
 
           for (size_t i = 0; i < boundbox.size(); i++)
           {
-               rectSurface[i] = boundbox[i].width * boundbox[i].height;
-               surfDif = lastRectSurface[i] - rectSurface[i];
-               if (surfDif > surfLim) //If bounding rectangle is smaller than last frame, save coordinates of bounding rectangle.
+               rectSurface[i] = boundbox[i].width * boundbox[i].height; //The surface area of the i'th bounding rectangle.
+               surfDif = lastRectSurface[i] - rectSurface[i];           //The surface difference between the last and the current bounding rectangle.
+               if (surfDif > surfLim)                                   //If surface of bounding rectangle is smaller than last frame.
                {
-                    rectCenter[i] = {boundbox[i].x + (boundbox[i].width / 2), boundbox[i].y + (boundbox[i].height / 2)};
-                    publishRectPoint(rectCenter, shouldPublish);
+                    rectCenter[i] = {boundbox[i].x + (boundbox[i].width / 2), boundbox[i].y + (boundbox[i].height / 2)}; //Find center coordinates.
+                    publishRectPoint(rectCenter, shouldPublish);                                                         //Publish point given a condition is met.
                }
-               lastRectSurface[i] = rectSurface[i];
+               lastRectSurface[i] = rectSurface[i]; //Set last rectangle surface to current rectangle surface.
           }
 
           // for (size_t i = 0; i < boundbox.size(); i++)
@@ -153,12 +153,12 @@ void publishRectPoint(vector<cv::Point> vectorCoordinates, vector<bool> shouldPu
      {
           if (shouldPub[i])
           {
-               geometry_msgs::Point rectPoint;
+               geometry_msgs::Point rectPoint; //x- and y-coordinates are converted to be of this type.
                rectPoint.x = vectorCoordinates[i].x;
                rectPoint.y = vectorCoordinates[i].y;
 
                rect_cent.publish(rectPoint);
-               shouldPub[i] = false;
+               shouldPub[i] = false; //Makes sure the point is only published once.
           }
      }
 }
