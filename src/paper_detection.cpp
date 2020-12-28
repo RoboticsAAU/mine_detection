@@ -9,7 +9,7 @@ using namespace std;
 ros::Publisher rect_cent;
 
 void createTrackbars();
-void publishRectPoint(vector<cv::Point> vectorCoordinates, vector<bool> shouldPub);
+void publishRectPoint(vector<cv::Point> vectorCoordinates, vector<bool> &shouldPub);
 cv::Mat denoiseImg(cv::Mat imgThresholded);
 cv::Mat defineRange(cv::Mat imgHSV);
 
@@ -147,7 +147,7 @@ void createTrackbars()
 }
 
 //Publish rectPoint x- and y-coordinates to rect_cent for the i'th point if the boolean shouldPub is true.
-void publishRectPoint(vector<cv::Point> vectorCoordinates, vector<bool> shouldPub)
+void publishRectPoint(vector<cv::Point> vectorCoordinates, vector<bool> &shouldPub)
 {
      for (size_t i = 0; i < vectorCoordinates.size(); i++)
      {
